@@ -1,0 +1,40 @@
+package org.mineacademy.fo.command;
+
+import java.io.File;
+import java.util.List;
+
+import org.mineacademy.fo.platform.Platform;
+import org.mineacademy.fo.settings.Lang;
+import org.mineacademy.fo.settings.SimpleSettings;
+
+public final class DumpLocaleCommand extends SimpleSubCommandCore {
+
+	public DumpLocaleCommand() {
+		super("dumplocale|dumploc");
+
+		this.setMaxArguments(0);
+		this.setDescription("Copy cloud language file to lang/ folder so you can edit it based on your settings.yml Locale key. Also updates your file with new keys and removes unused ones.");
+	}
+
+	@Override
+	protected void onCommand() {
+		tellInfo("Dumping or updating " + SimpleSettings.LOCALE + " locale file...");
+
+		final File dumped = Lang.dumpLocale();
+		final File rootFile = Platform.getPlugin().getDataFolder();
+
+		tellSuccess("Locale file dumped to " + dumped.getAbsolutePath().replace(rootFile.getParentFile().getAbsolutePath(), "") + ". Existing keys were updated, see console for details.");
+	}
+
+	/**
+	 * @see org.mineacademy.fo.command.SimpleCommandCore#tabComplete()
+	 */
+	@Override
+	protected List<String> tabComplete() {
+
+		if (args.length == 1)
+			return completeLastWord("en_US");
+
+		return NO_COMPLETE;
+	}
+}

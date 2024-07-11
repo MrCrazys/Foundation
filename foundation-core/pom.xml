@@ -1,0 +1,72 @@
+<!-- (c) All rights reserved. Do not share, copy, reproduce 
+	or sell any part of this library unless you have written permission from 
+	MineAcademy.org. All infringements will be prosecuted. If you are the personal 
+	owner of the MineAcademy.org End User License then you may use it for your 
+	own use in plugins but not for any other purpose. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.mineacademy</groupId>
+        <artifactId>foundation-parent</artifactId>
+        <version>7.0.0</version>
+    </parent>
+
+    <artifactId>foundation-core</artifactId>
+
+    <dependencies>
+        <!-- This is NOT used anywhere in Foundation, only here to prevent compile 
+			errors from missing the log4j dependency that is shipped in the server jar -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.23.1</version>
+        </dependency>
+
+		<!-- Adventure -->
+		 <dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-api</artifactId>
+		    <version>4.17.0</version>
+		 </dependency>
+		<dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-text-serializer-plain</artifactId>
+		    <version>4.17.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-text-serializer-gson</artifactId>
+		    <version>4.17.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-text-serializer-legacy</artifactId>
+		    <version>4.17.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-text-serializer-bungeecord</artifactId>
+		    <version>4.3.4</version>
+		</dependency>
+		<dependency>
+		    <groupId>net.kyori</groupId>
+		    <artifactId>adventure-text-minimessage</artifactId>
+		    <version>4.17.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.snakeyaml</groupId>
+		    <artifactId>snakeyaml-engine</artifactId>
+		    <version>2.7</version>
+		</dependency>	
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.11.0</version>
+		</dependency>
+    </dependencies>
+ 
+</project>

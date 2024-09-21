@@ -1,6 +1,5 @@
 package org.mineacademy.fo.model;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,25 +8,19 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.bukkit.entity.Player;
-import org.mineacademy.fo.Common;
 import org.mineacademy.fo.MinecraftVersion;
 import org.mineacademy.fo.MinecraftVersion.V;
-import org.mineacademy.fo.ReflectionUtil;
-import org.mineacademy.fo.collection.SerializedMap;
 import org.mineacademy.fo.exception.EventHandledException;
 import org.mineacademy.fo.exception.FoException;
 import org.mineacademy.fo.plugin.SimplePlugin;
 import org.mineacademy.fo.remain.CompChatColor;
-import org.mineacademy.fo.remain.Remain;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.reflect.FieldAccessException;
 import com.comphenix.protocol.reflect.StructureModifier;
-import com.comphenix.protocol.wrappers.AdventureComponentConverter;
 import com.comphenix.protocol.wrappers.EnumWrappers.ChatType;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
@@ -37,20 +30,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.bungeecord.BungeeComponentSerializer;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.chat.ComponentSerializer;
 
 /**
  * Represents packet handling using ProtocolLib
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class PacketListener {
-
-	/**
-	 * Stores 1.19 system chat packet constructor and Adventure stuff for maximum performance
-	 */
-	private static Class<?> textComponentClass;
 
 	/**
 	 * Called automatically when you use \@AutoRegister, inject
@@ -192,36 +180,14 @@ public abstract class PacketListener {
 		private final Set<String> processedPlayers = new HashSet<>();
 
 		/**
-		 * The event field for convenient calling in the overridable methods
+		 * The packet processing mode for fastest performance
 		 */
-		@Getter
-		private PacketEvent event;
+		private int mode = -1;
 
 		/**
-		 * The player field you can use below
+		 * The action bar lookup mode for fastest performance
 		 */
-		@Getter
-		private Player player;
-
-		/**
-		 * The currently filtered json message
-		 */
-		private String jsonMessage;
-
-		/**
-		 * Support md_5 BaseComponent API
-		 */
-		private boolean isBaseComponent = false;
-
-		/**
-		 * Support Adventure PaperSpigot library
-		 */
-		private boolean adventure = false;
-
-		/**
-		 * Support 1.19+ system chat
-		 */
-		private final boolean systemChat = MinecraftVersion.atLeast(V.v1_19);
+		private int actionBarMode = -1;
 
 		/**
 		 * Create new chat listener
@@ -232,298 +198,144 @@ public abstract class PacketListener {
 
 		@Override
 		public void onPacketSending(final PacketEvent event) {
-			if (event.getPlayer() == null)
-				return;
+			final Player player = event.getPlayer();
 
-			this.event = event;
-			this.player = event.getPlayer();
+			if (player == null)
+				return;
 
 			final String playerName = event.getPlayer().getName();
 			final PacketContainer packet = event.getPacket();
 
-			// Ignore temporary players
-			try {
-				this.player.getUniqueId();
-
-			} catch (final UnsupportedOperationException ex) {
+			// Ignore dummy instances and disabled plugin or processed players
+			if (!player.isOnline() || !SimplePlugin.getInstance().isEnabled() || this.processedPlayers.contains(playerName))
 				return;
+
+			// Ignore action bar messages
+			if (this.actionBarMode == -1) {
+				if (!packet.getBooleans().getFields().isEmpty())
+					this.actionBarMode = 1;
+
+				else if (!packet.getBytes().getFields().isEmpty())
+					this.actionBarMode = 2;
+
+				else if (!packet.getChatTypes().getFields().isEmpty())
+					this.actionBarMode = 3;
+
+				else
+					throw new FoException("Unknown way to find if chat packet is action bar, packet: " + packet.getHandle().getClass());
 			}
 
-			// Ignore dummy instances and disabled plugin
-			if (!this.player.isOnline() || !SimplePlugin.getInstance().isEnabled())
-				return;
+			if (this.actionBarMode == 1) {
+				if (packet.getBooleans().read(0) == true)
+					return;
 
-			// Prevent deadlock
-			if (this.processedPlayers.contains(playerName))
-				return;
+			} else if (this.actionBarMode == 2) {
+				if (packet.getBytes().read(0) != (byte) 0)
+					return;
 
-			// Ignore actionbar messages
-			if (MinecraftVersion.atLeast(V.v1_19) && packet.getHandle().getClass().getSimpleName().equals("ClientboundSystemChatPacket") &&
-					!packet.getBooleans().getFields().isEmpty() && packet.getBooleans().read(0) == true)
-				return;
+			} else if (this.actionBarMode == 3) {
+				if (packet.getChatTypes().read(0) == ChatType.GAME_INFO)
+					return;
+			}
 
 			// Lock processing to one instance only to prevent another packet filtering
 			// in a filtering
 			try {
 				this.processedPlayers.add(playerName);
 
-				final String legacyText = this.compileChatMessage(event);
-				String parsedText = legacyText;
+				StructureModifier<Component> modifierAdventure = null;
+				StructureModifier<BaseComponent[]> modifierBaseComponent = null;
+				StructureModifier<WrappedChatComponent> modifierIChatBaseComponent = null;
 
-				try {
-					parsedText = this.onMessage(parsedText);
+				String json;
 
-				} catch (final EventHandledException ex) {
-					event.setCancelled(true);
+				if (this.mode == -1) {
+					modifierAdventure = event.getPacket().getModifier().withType(Component.class);
+					modifierBaseComponent = event.getPacket().getModifier().withType(BaseComponent[].class);
+					modifierIChatBaseComponent = event.getPacket().getChatComponents();
 
-					return;
+					if (!modifierAdventure.getFields().isEmpty())
+						this.mode = 1;
+
+					else if (!modifierBaseComponent.getFields().isEmpty())
+						this.mode = 2;
+
+					else if (!modifierIChatBaseComponent.getFields().isEmpty())
+						this.mode = 3;
 				}
 
-				if (this.jsonMessage != null && !this.jsonMessage.isEmpty())
-					this.jsonMessage = this.onJsonMessage(this.jsonMessage);
+				if (this.mode == 1) {
+					modifierAdventure = event.getPacket().getModifier().withType(Component.class);
 
-				if (!legacyText.equals(parsedText))
-					this.writeEditedMessage(parsedText, event);
+					json = GsonComponentSerializer.gson().serialize(modifierAdventure.read(0));
+
+				} else if (this.mode == 2) {
+					modifierBaseComponent = event.getPacket().getModifier().withType(BaseComponent[].class);
+
+					json = GsonComponentSerializer.gson().serialize(BungeeComponentSerializer.get().deserialize(modifierBaseComponent.read(0)));
+
+				} else if (this.mode == 3) {
+					modifierIChatBaseComponent = event.getPacket().getChatComponents();
+
+					json = modifierIChatBaseComponent.read(0).getJson();
+
+				} else
+					throw new FoException("Unknown way to deserialize chat packet " + packet.getHandle().getClass());
+
+				if (json.length() < 50_000) {
+					final boolean editJson = this.editJson();
+					final Component oldJson = editJson ? GsonComponentSerializer.gson().deserialize(json) : null;
+
+					try {
+						json = this.onJsonMessage(player, json);
+
+					} catch (final EventHandledException ex) {
+						event.setCancelled(true);
+
+						return;
+					}
+
+					if (editJson) {
+						final Component newJson = GsonComponentSerializer.gson().deserialize(json);
+
+						if (!newJson.equals(oldJson)) {
+							if (this.mode == 1)
+								modifierAdventure.write(0, newJson);
+
+							else if (this.mode == 2)
+								modifierBaseComponent.write(0, BungeeComponentSerializer.get().serialize(newJson));
+
+							else if (this.mode == 3)
+								modifierIChatBaseComponent.write(0, WrappedChatComponent.fromJson(json));
+						}
+					}
+				}
 
 			} finally {
-				this.processedPlayers.remove(this.player.getName());
+				this.processedPlayers.remove(player.getName());
 			}
 		}
 
-		/*
-		 * Read the chat message in unpacked format from the event
+		/**
+		 * Called when chat message packet is received.
+		 *
+		 * If you edit the jsonMessage we do NOT set it back unless you call
+		 * {@link #editJson()} and set it to true.
+		 *
+		 * To cancel cancel the packet, throw {@link EventHandledException}
+		 *
+		 * @param player
+		 * @param json
+		 *
+		 * @return
 		 */
-		private String compileChatMessage(PacketEvent event) {
-
-			// Reset
-			this.jsonMessage = null;
-
-			// Components
-			if (MinecraftVersion.atLeast(V.v1_7)) {
-
-				// System chat
-				if (this.systemChat) {
-
-					try {
-						// Minecraft 1.20.4+ uses Component field instead of text
-						this.jsonMessage = event.getPacket().getChatComponents().read(0).getJson();
-
-					} catch (final Exception ex) {
-						this.jsonMessage = event.getPacket().getStrings().read(0);
-					}
-
-					if (this.jsonMessage != null) {
-						final SimpleComponent adventureComp = SimpleComponent.fromJson(this.jsonMessage);
-
-						return adventureComp.toLegacy();
-					}
-
-					try {
-						final StructureModifier<Component> adventureModifier = event.getPacket().getModifier().withType(Component.class);
-
-						if (!adventureModifier.getFields().isEmpty()) {
-							final Component component = adventureModifier.read(0);
-
-							this.jsonMessage = SimpleComponent.fromAdventure(component).toAdventureJson();
-						}
-
-					} catch (final Throwable ignored) {
-						ignored.printStackTrace();
-						// Ignore if Adventure is unavailable
-					}
-
-					final Object adventureContent = ReflectionUtil.getFieldContent(event.getPacket().getHandle(), "adventure$content");
-
-					if (adventureContent != null) {
-						final List<String> contents = new ArrayList<>();
-
-						this.mergeChildren(adventureContent, contents);
-						final String mergedContents = String.join("", contents);
-
-						return mergedContents;
-					}
-
-				} else {
-					final StructureModifier<Object> packet = event.getPacket().getModifier();
-					final StructureModifier<WrappedChatComponent> chat = event.getPacket().getChatComponents();
-					final WrappedChatComponent component = chat.read(0);
-
-					try {
-						final ChatType chatType = event.getPacket().getChatTypes().readSafely(0);
-
-						if (chatType == ChatType.GAME_INFO)
-							return "";
-
-					} catch (final NoSuchMethodError t) {
-						// Silence on legacy MC
-					}
-
-					if (component != null)
-						this.jsonMessage = component.getJson();
-
-					// Md_5 way of dealing with packets
-					else if (packet.size() > 1) {
-						Object secondField = packet.readSafely(1);
-
-						// Support "Adventure" library in PaperSpigot
-						if (secondField == null) {
-							secondField = packet.readSafely(2);
-
-							if (secondField != null)
-								this.adventure = true;
-						}
-
-						if (secondField instanceof BaseComponent[]) {
-							this.jsonMessage = toJson((BaseComponent[]) secondField);
-
-							this.isBaseComponent = true;
-						}
-					}
-				}
-			}
-
-			// No components for this MC version
-			else
-				this.jsonMessage = event.getPacket().getStrings().read(0);
-
-			if (this.jsonMessage != null && !this.jsonMessage.isEmpty())
-				// Only check valid messages, skipping those over 50k since it would cause rules
-				// to take too long and overflow. 99% packets are below this size, it may even be
-				// that such oversized packets are maliciously sent so we protect the server from freeze
-				if (this.jsonMessage.length() < 50_000) {
-					final String legacyText;
-
-					// Catch errors from other plugins and silence them
-					try {
-						final SimpleComponent adventureComp = SimpleComponent.fromJson(this.jsonMessage);
-
-						legacyText = adventureComp.toLegacy();
-
-					} catch (final Throwable t) {
-						return "";
-					}
-
-					return legacyText;
-				}
-
-			return "";
-		}
-
-		/*
-		 * Helper method to get content of all children of the given component
-		 */
-		private void mergeChildren(Object component, List<String> contents) {
-			final Method contentMethod = ReflectionUtil.getMethod(component.getClass(), "content");
-			final Method childrenMethod = ReflectionUtil.getMethod(component.getClass(), "children");
-
-			if (textComponentClass == null)
-				textComponentClass = ReflectionUtil.lookupClass("net.kyori.adventure.text.TextComponent");
-
-			if (textComponentClass.isAssignableFrom(component.getClass())) {
-				contents.add(ReflectionUtil.invoke(contentMethod, component));
-
-				for (final Object child : (List<?>) ReflectionUtil.invoke(childrenMethod, component))
-					mergeChildren(child, contents);
-			}
-		}
-
-		/*
-		 * Writes the edited message as JSON format from the event
-		 */
-		private void writeEditedMessage(String message, PacketEvent event) {
-			final PacketContainer packet = event.getPacket();
-
-			if (!this.editJson())
-				this.jsonMessage = SimpleComponent.fromMini(message).toAdventureJson();
-
-			if (this.systemChat) {
-
-				// We first need to get rid of Adventure library adding an extra field, so that the string JSON will be used below
-				// Thanks to lukalt for help! https://github.com/dmulloy2/ProtocolLib/issues/2330#issuecomment-1517542145
-				try {
-					final StructureModifier<Object> adventureModifier = packet.getModifier().withType(AdventureComponentConverter.getComponentClass());
-
-					if (!adventureModifier.getFields().isEmpty())
-						adventureModifier.write(0, null);
-
-				} catch (final Throwable ignored) {
-					// Ignore if Adventure is unavailable
-				}
-
-				try {
-					packet.getChatComponents().write(0, WrappedChatComponent.fromJson(this.jsonMessage));
-
-				} catch (final FieldAccessException t) {
-					packet.getStrings().write(0, this.jsonMessage);
-				}
-
-			} else if (this.isBaseComponent)
-				packet.getModifier().writeSafely(this.adventure ? 2 : 1, toComponent(this.jsonMessage));
-
-			else if (MinecraftVersion.atLeast(V.v1_7))
-				packet.getChatComponents().writeSafely(0, WrappedChatComponent.fromJson(this.jsonMessage));
-
-			else
-				packet.getStrings().writeSafely(0, SerializedMap.of("text", this.jsonMessage.substring(1, this.jsonMessage.length() - 1)).toJson());
-		}
-
-		private String toJson(final BaseComponent... comps) {
-			String json;
-
-			try {
-				json = ComponentSerializer.toString(comps);
-
-			} catch (final Throwable t) {
-				json = Remain.GSON.toJson(new TextComponent(comps).toLegacyText());
-			}
-
+		protected String onJsonMessage(Player player, String json) {
 			return json;
 		}
 
-		private BaseComponent[] toComponent(final String json) {
-			try {
-				return ComponentSerializer.parse(json);
-
-			} catch (final Throwable t) {
-				Common.throwError(t,
-						"Failed to call toComponent!",
-						"Json: " + json,
-						"Error: %error%");
-
-				return null;
-			}
-		}
-
 		/**
-		 * Called automatically when we receive and decipher a chat message packet.
-		 * <p>
-		 * You can use {@link #getEvent()} and {@link #getPlayer()} here.
-		 * The preferred way of cancelling the packet is throwing an {@link EventHandledException}
-		 * <p>
-		 * If you edit the message we automatically set it.
-		 *
-		 * @param message
-		 * @return
-		 */
-		protected abstract String onMessage(String message);
-
-		/**
-		 * Called automatically when we receive the chat message and decipher it into plain json.
-		 * You can use {@link #getEvent()} and {@link #getPlayer()} here.
-		 * <p>
-		 * If you edit the jsonMessage we do NOT set it back unless you call {@link #editJson()} and set it to true.
-		 *
-		 * @param jsonMessage
-		 *
-		 * @return
-		 */
-		protected String onJsonMessage(final String jsonMessage) {
-			return jsonMessage;
-		}
-
-		/**
-		 * false (default) = we edit the message based on {@link #onMessage(String)}
-		 * true = we edit the message based on {@link #onJsonMessage(String)}
+		 * For performance purposes, json message in {@link #jsonMessage} is not edited by default
+		 * Return true to change this behavior.
 		 *
 		 * @return
 		 */

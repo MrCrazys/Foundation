@@ -196,10 +196,13 @@ public abstract class FileConfig extends ConfigSection {
 		ValidCore.checkNotNull(this.file, "Cannot save to a null file, call load() or setFile() first in " + this);
 
 		try {
-			this.onPreSave();
+			if (!this.canSave()) {
+				this.onFailedSave();
 
-			if (!this.canSave())
 				return;
+			}
+
+			//this.onPreSave();
 
 			final File parent = this.file.getCanonicalFile().getParentFile();
 
@@ -208,10 +211,6 @@ public abstract class FileConfig extends ConfigSection {
 
 			// Call the main save method
 			this.onSave();
-
-			// Manually save map keys
-			for (final Map.Entry<String, Object> entry : this.saveToMap().entrySet())
-				this.set(entry.getKey(), entry.getValue());
 
 			final String data = this.saveToString();
 			final Writer writer = new OutputStreamWriter(new FileOutputStream(this.file), StandardCharsets.UTF_8);
@@ -231,8 +230,8 @@ public abstract class FileConfig extends ConfigSection {
 	/**
 	 * Called before the configuration is saved before canSave() is checked
 	 */
-	protected void onPreSave() {
-	}
+	//protected void onPreSave() {
+	//}
 
 	/**
 	 * Override this to prevent saving the configuration
@@ -247,6 +246,16 @@ public abstract class FileConfig extends ConfigSection {
 	 * Called before the configuration is saved after canSave() is checked
 	 */
 	protected void onSave() {
+
+		// Manually save map keys
+		for (final Map.Entry<String, Object> entry : this.saveToMap().entrySet())
+			this.set(entry.getKey(), entry.getValue());
+	}
+
+	/**
+	 * Called when {@link #canSave()} returns false.
+	 */
+	protected void onFailedSave() {
 	}
 
 	/**
@@ -358,13 +367,13 @@ public abstract class FileConfig extends ConfigSection {
 
 	/*public final boolean isConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-	
+
 		return this.isMemorySection(path);
 	}*/
 
 	/*public final MemorySection getConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-	
+
 		return this.retrieveMemorySection(path);
 	}*/
 

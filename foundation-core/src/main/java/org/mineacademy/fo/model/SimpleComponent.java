@@ -16,15 +16,12 @@ import org.mineacademy.fo.ChatUtil;
 import org.mineacademy.fo.CommonCore;
 import org.mineacademy.fo.MinecraftVersion;
 import org.mineacademy.fo.MinecraftVersion.V;
-import org.mineacademy.fo.SerializeUtilCore.Language;
 import org.mineacademy.fo.ValidCore;
 import org.mineacademy.fo.collection.SerializedMap;
-import org.mineacademy.fo.debug.Debugger;
 import org.mineacademy.fo.exception.FoException;
 import org.mineacademy.fo.exception.FoScriptException;
 import org.mineacademy.fo.platform.FoundationPlayer;
 import org.mineacademy.fo.remain.CompChatColor;
-import org.mineacademy.fo.remain.RemainCore;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -56,11 +53,6 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * Stores legacy colors
 	 */
 	private static final Map<String, String> LEGACY_TO_MINI = new HashMap<>();
-
-	/**
-	 * The pattern for matching MiniMessage tags
-	 */
-	//private static final Pattern MINIMESSAGE_PATTERN = Pattern.compile("<[!?#]?[a-z0-9_-]*>");
 
 	static {
 		LEGACY_TO_MINI.put("&0", "<black>");
@@ -131,7 +123,16 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	}
 
 	private SimpleComponent(List<ConditionalComponent> components, Style lastStyle) {
-		this.subcomponents = Collections.unmodifiableList(components);
+		this.subcomponents = components;
+		this.lastStyle = lastStyle;
+	}
+
+	private SimpleComponent(ConditionalComponent component) {
+		this(component, null);
+	}
+
+	private SimpleComponent(ConditionalComponent component, Style lastStyle) {
+		this.subcomponents = Collections.singletonList(component);
 		this.lastStyle = lastStyle;
 	}
 
@@ -682,7 +683,7 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * @return
 	 */
 	public static SimpleComponent empty() {
-		return new SimpleComponent(CommonCore.newList(ConditionalComponent.fromComponent(Component.empty())));
+		return new SimpleComponent(ConditionalComponent.fromComponent(Component.empty()));
 	}
 
 	/**
@@ -699,7 +700,7 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 		if (message.startsWith("<center>"))
 			message = ChatUtil.center(message.replace("<center>", "").trim());
 
-		// First, replace legacy & color codes
+		// Replace legacy & color codes
 		final StringBuilder result = new StringBuilder();
 
 		for (int i = 0; i < message.length(); i++) {
@@ -712,19 +713,12 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 
 					continue;
 				}
-
-			} else if (i + 7 < message.length() && message.charAt(i) == '#' && message.substring(i + 1, i + 7).matches("[0-9a-fA-F]{6}")) {
-				//result.append("<#").append(message.substring(i + 1, i + 7)).append(">");
-				//i += 6;
-
-				//continue;
 			}
 
 			result.append(message.charAt(i));
 		}
 
 		message = result.toString();
-		//message = escapeInvalidTags(message);
 
 		Component mini;
 
@@ -732,9 +726,8 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 			mini = MiniMessage.miniMessage().deserialize(message);
 
 		} catch (final Throwable t) {
-			Debugger.printStackTrace("Error parsing mini message tags in: " + message);
+			CommonCore.throwError(t, "Error parsing mini message tags in: " + message);
 
-			RemainCore.sneaky(t);
 			return null;
 		}
 
@@ -755,28 +748,8 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 				}
 			}
 
-		return new SimpleComponent(CommonCore.newList(ConditionalComponent.fromComponent(mini)), lastStyle);
+		return new SimpleComponent(ConditionalComponent.fromComponent(mini), lastStyle);
 	}
-
-	/*
-	 * Escapes invalid minimessage tags in the message.
-	 */
-	/*private static String escapeInvalidTags(String input) {
-		Matcher matcher = Pattern.compile("<[^>]*>").matcher(input);
-		StringBuffer buffer = new StringBuffer();
-
-		while (matcher.find()) {
-			String match = matcher.group(0);
-
-			if (!MINIMESSAGE_PATTERN.matcher(match).matches())
-				match = match.replace("<", "\\\\<").replace(">", "\\>");
-
-			matcher.appendReplacement(buffer, match);
-		}
-
-		matcher.appendTail(buffer);
-		return buffer.toString();
-	}*/
 
 	/**
 	 * Create a new interactive chat component supporting § variables
@@ -785,7 +758,7 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * @return
 	 */
 	public static SimpleComponent fromSection(@NonNull String legacyText) {
-		return new SimpleComponent(CommonCore.newList(ConditionalComponent.fromSection(legacyText)));
+		return new SimpleComponent(ConditionalComponent.fromSection(legacyText));
 	}
 
 	/**
@@ -805,7 +778,7 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * @return
 	 */
 	public static SimpleComponent fromAdventure(@NonNull Component component) {
-		return new SimpleComponent(CommonCore.newList(ConditionalComponent.fromComponent(component)));
+		return new SimpleComponent(ConditionalComponent.fromComponent(component));
 	}
 
 	/**
@@ -815,7 +788,7 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * @return
 	 */
 	public static SimpleComponent fromPlain(@NonNull String plainText) {
-		return new SimpleComponent(CommonCore.newList(ConditionalComponent.fromPlain(plainText)));
+		return new SimpleComponent(ConditionalComponent.fromPlain(plainText));
 	}
 
 	/**
@@ -824,8 +797,8 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 	 * @param json
 	 * @return
 	 */
-	public static SimpleComponent fromJson(@NonNull String json) {
-		return deserialize(SerializedMap.of(Language.JSON, json));
+	public static SimpleComponent fromAdventureJson(@NonNull String json) {
+		return new SimpleComponent(ConditionalComponent.fromJson(json));
 	}
 
 	/**
@@ -954,6 +927,16 @@ public final class SimpleComponent implements ConfigSerializable, ComponentLike 
 		 */
 		static ConditionalComponent fromAmpersand(String text) {
 			return new ConditionalComponent(LegacyComponentSerializer.legacyAmpersand().deserialize(text));
+		}
+
+		/**
+		 * Create a new component from a legacy text
+		 *
+		 * @param text
+		 * @return
+		 */
+		static ConditionalComponent fromJson(String json) {
+			return new ConditionalComponent(GsonComponentSerializer.gson().deserialize(json));
 		}
 
 		/**

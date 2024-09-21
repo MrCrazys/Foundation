@@ -198,7 +198,7 @@ public abstract class FoundationPlayer {
 	 * @param json
 	 */
 	public final void sendJson(String json) {
-		this.sendMessage(SimpleComponent.fromJson(json));
+		this.sendMessage(SimpleComponent.fromAdventureJson(json));
 	}
 
 	/**

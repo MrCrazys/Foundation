@@ -257,7 +257,7 @@ public interface SharedBukkitCommandCore {
 	 * @return
 	 */
 	default CommandSender getCommandSender() {
-		return ((BukkitPlayer) this.getAudience()).getSender();
+		return ((BukkitPlayer) this.getAudience()).getCommandSender();
 	}
 
 	FoundationPlayer getAudience();

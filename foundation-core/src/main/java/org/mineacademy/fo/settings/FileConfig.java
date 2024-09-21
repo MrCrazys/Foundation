@@ -367,13 +367,13 @@ public abstract class FileConfig extends ConfigSection {
 
 	/*public final boolean isConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-	
+
 		return this.isMemorySection(path);
 	}*/
 
 	/*public final MemorySection getConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-	
+
 		return this.retrieveMemorySection(path);
 	}*/
 
@@ -526,7 +526,7 @@ public abstract class FileConfig extends ConfigSection {
 		final String raw = this.getString(path);
 
 		try {
-			return raw != null ? java.time.ZoneId.of(raw) : def;
+			return raw != null && !"".equals(raw) ? java.time.ZoneId.of(raw) : def;
 
 		} catch (final Throwable t) {
 			throw new IllegalArgumentException("Path '" + this.buildPathPrefix(path) + "' in " + this.getFile() + " contains invalid timezone '" + raw + "'! Valid syntax: https://garygregory.wordpress.com/2013/06/18/what-are-the-java-timezone-ids");

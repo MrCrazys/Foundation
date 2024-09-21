@@ -1783,7 +1783,7 @@ public final class Remain extends RemainCore {
 				final String colorized = CompChatColor.translateColorCodes(message.apply(receiver));
 
 				if (!colorized.isEmpty())
-					receiver.sendMessage(SimpleComponent.fromSection(colorized));
+					SimpleComponent.fromSection(colorized).send(receiver);
 			}
 
 	}

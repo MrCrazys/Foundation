@@ -2132,7 +2132,7 @@ public enum CompSound {
  */
 class Data {
 
-	static final WeakHashMap<String, Sound> BUKKIT_NAMES = new WeakHashMap<>();
+	static final Map<String, Sound> BUKKIT_NAMES = new WeakHashMap<>();
 	static final Map<String, CompSound> NAMES = new HashMap<>();
 
 	static {

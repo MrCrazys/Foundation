@@ -115,7 +115,7 @@ public abstract class CommonCore {
 	 */
 	public static final void broadcastTo(final Iterable<FoundationPlayer> recipients, final SimpleComponent message) {
 		for (final FoundationPlayer recipient : recipients)
-			recipient.sendMessage(message);
+			message.send(recipient);
 	}
 
 	/**
@@ -140,7 +140,7 @@ public abstract class CommonCore {
 		if (!message.isEmpty()) {
 			for (final FoundationPlayer online : Platform.getOnlinePlayers())
 				if (online.hasPermission(showPermission))
-					online.sendMessage(message);
+					message.send(online);
 
 			if (log)
 				log(message.toLegacy());
@@ -191,14 +191,14 @@ public abstract class CommonCore {
 
 		// No previous message stored, just tell the player now
 		if (!TIMED_TELL_CACHE.containsKey(message)) {
-			sender.sendMessage(message);
+			message.send(sender);
 
 			TIMED_TELL_CACHE.put(message, TimeUtil.currentTimeSeconds());
 			return;
 		}
 
 		if (TimeUtil.currentTimeSeconds() - TIMED_TELL_CACHE.get(message) > delaySeconds) {
-			sender.sendMessage(message);
+			message.send(sender);
 
 			TIMED_TELL_CACHE.put(message, TimeUtil.currentTimeSeconds());
 		}
@@ -214,7 +214,7 @@ public abstract class CommonCore {
 	public static final void tellLater(final int delayTicks, final FoundationPlayer sender, final String message) {
 		Platform.runTask(delayTicks, () -> {
 			if (sender.isOnline())
-				sender.sendMessage(SimpleComponent.fromMini(message));
+				SimpleComponent.fromMini(message).send(sender);
 		});
 	}
 
@@ -228,7 +228,7 @@ public abstract class CommonCore {
 	public static final void tellLater(final int delayTicks, final FoundationPlayer sender, final SimpleComponent message) {
 		Platform.runTask(delayTicks, () -> {
 			if (sender.isOnline())
-				sender.sendMessage(message);
+				message.send(sender);
 		});
 	}
 
@@ -1265,20 +1265,20 @@ public abstract class CommonCore {
 	 * @return
 	 */
 	@SafeVarargs
-	public static final <K> Map<K, Object> newHashMap(Object... entries) {
+	public static final <K, V> Map<K, V> newHashMap(Object... entries) {
 		if (entries == null || entries.length == 0)
 			return new LinkedHashMap<>();
 
 		if (entries.length % 2 != 0)
 			throw new FoException("Entries must be in pairs: " + Arrays.toString(entries) + ", got " + entries.length + " entries.");
 
-		final Map<K, Object> map = new LinkedHashMap<>();
+		final Map<K, V> map = new LinkedHashMap<>();
 
 		final K firstKey = (K) entries[0];
 
 		for (int i = 0; i < entries.length; i += 2) {
 			final K key = (K) entries[i];
-			final Object value = entries[i + 1];
+			final V value = (V) entries[i + 1];
 
 			if (key == null)
 				throw new FoException("Key cannot be null at index " + i);

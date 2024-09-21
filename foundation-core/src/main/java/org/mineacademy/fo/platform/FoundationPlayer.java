@@ -28,6 +28,8 @@ public abstract class FoundationPlayer {
 
 	public abstract boolean isPlayer();
 
+	public abstract boolean isCommandSender();
+
 	public abstract boolean isConsole();
 
 	public abstract boolean isConversing();
@@ -41,6 +43,8 @@ public abstract class FoundationPlayer {
 	}
 
 	public abstract <T> T getPlayer();
+
+	public abstract <T> T getCommandSender();
 
 	protected abstract String getSenderName0();
 

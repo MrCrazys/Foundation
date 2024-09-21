@@ -3,7 +3,6 @@ package org.mineacademy.fo.platform;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -386,66 +385,56 @@ public class BukkitPlatform extends FoundationPlatform {
 			}
 		});
 
-		this.addLegacyEnumTypes();
-	}
+		ReflectionUtilCore.addLegacyEnumType(EntityType.class, Common.newHashMap(
+				"TIPPED_ARROW", V.v1_9,
+				"SPECTRAL_ARROW", V.v1_9,
+				"SHULKER_BULLET", V.v1_9,
+				"DRAGON_FIREBALL", V.v1_9,
+				"SHULKER", V.v1_9,
+				"AREA_EFFECT_CLOUD", V.v1_9,
+				"LINGERING_POTION", V.v1_9,
+				"POLAR_BEAR", V.v1_10,
+				"HUSK", V.v1_10,
+				"ELDER_GUARDIAN", V.v1_11,
+				"WITHER_SKELETON", V.v1_11,
+				"STRAY", V.v1_11,
+				"DONKEY", V.v1_11,
+				"MULE", V.v1_11,
+				"EVOKER_FANGS", V.v1_11,
+				"EVOKER", V.v1_11,
+				"VEX", V.v1_11,
+				"VINDICATOR", V.v1_11,
+				"ILLUSIONER", V.v1_12,
+				"PARROT", V.v1_12,
+				"TURTLE", V.v1_13,
+				"PHANTOM", V.v1_13,
+				"TRIDENT", V.v1_13,
+				"COD", V.v1_13,
+				"SALMON", V.v1_13,
+				"PUFFERFISH", V.v1_13,
+				"TROPICAL_FISH", V.v1_13,
+				"DROWNED", V.v1_13,
+				"DOLPHIN", V.v1_13,
+				"CAT", V.v1_14,
+				"PANDA", V.v1_14,
+				"PILLAGER", V.v1_14,
+				"RAVAGER", V.v1_14,
+				"TRADER_LLAMA", V.v1_14,
+				"WANDERING_TRADER", V.v1_14,
+				"FOX", V.v1_14,
+				"BEE", V.v1_15,
+				"HOGLIN", V.v1_16,
+				"PIGLIN", V.v1_16,
+				"STRIDER", V.v1_16,
+				"ZOGLIN", V.v1_16,
+				"PIGLIN_BRUTE", V.v1_16,
+				"AXOLOTL", V.v1_17,
+				"GLOW_ITEM_FRAME", V.v1_17,
+				"GLOW_SQUID", V.v1_17,
+				"GOAT", V.v1_17,
+				"MARKER", V.v1_17));
 
-	private void addLegacyEnumTypes() {
-		final Map<String, V> entities = new HashMap<>();
-
-		entities.put("TIPPED_ARROW", V.v1_9);
-		entities.put("SPECTRAL_ARROW", V.v1_9);
-		entities.put("SHULKER_BULLET", V.v1_9);
-		entities.put("DRAGON_FIREBALL", V.v1_9);
-		entities.put("SHULKER", V.v1_9);
-		entities.put("AREA_EFFECT_CLOUD", V.v1_9);
-		entities.put("LINGERING_POTION", V.v1_9);
-		entities.put("POLAR_BEAR", V.v1_10);
-		entities.put("HUSK", V.v1_10);
-		entities.put("ELDER_GUARDIAN", V.v1_11);
-		entities.put("WITHER_SKELETON", V.v1_11);
-		entities.put("STRAY", V.v1_11);
-		entities.put("DONKEY", V.v1_11);
-		entities.put("MULE", V.v1_11);
-		entities.put("EVOKER_FANGS", V.v1_11);
-		entities.put("EVOKER", V.v1_11);
-		entities.put("VEX", V.v1_11);
-		entities.put("VINDICATOR", V.v1_11);
-		entities.put("ILLUSIONER", V.v1_12);
-		entities.put("PARROT", V.v1_12);
-		entities.put("TURTLE", V.v1_13);
-		entities.put("PHANTOM", V.v1_13);
-		entities.put("TRIDENT", V.v1_13);
-		entities.put("COD", V.v1_13);
-		entities.put("SALMON", V.v1_13);
-		entities.put("PUFFERFISH", V.v1_13);
-		entities.put("TROPICAL_FISH", V.v1_13);
-		entities.put("DROWNED", V.v1_13);
-		entities.put("DOLPHIN", V.v1_13);
-		entities.put("CAT", V.v1_14);
-		entities.put("PANDA", V.v1_14);
-		entities.put("PILLAGER", V.v1_14);
-		entities.put("RAVAGER", V.v1_14);
-		entities.put("TRADER_LLAMA", V.v1_14);
-		entities.put("WANDERING_TRADER", V.v1_14);
-		entities.put("FOX", V.v1_14);
-		entities.put("BEE", V.v1_15);
-		entities.put("HOGLIN", V.v1_16);
-		entities.put("PIGLIN", V.v1_16);
-		entities.put("STRIDER", V.v1_16);
-		entities.put("ZOGLIN", V.v1_16);
-		entities.put("PIGLIN_BRUTE", V.v1_16);
-		entities.put("AXOLOTL", V.v1_17);
-		entities.put("GLOW_ITEM_FRAME", V.v1_17);
-		entities.put("GLOW_SQUID", V.v1_17);
-		entities.put("GOAT", V.v1_17);
-		entities.put("MARKER", V.v1_17);
-
-		ReflectionUtilCore.addLegacyEnumType(EntityType.class, entities);
-
-		final Map<String, V> spawnReasons = new HashMap<>();
-		spawnReasons.put("DROWNED", V.v1_13);
-
-		ReflectionUtilCore.addLegacyEnumType(SpawnReason.class, spawnReasons);
+		ReflectionUtilCore.addLegacyEnumType(SpawnReason.class, Common.newHashMap("DROWNED", V.v1_13));
 	}
 
 	@Override

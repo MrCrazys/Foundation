@@ -56,6 +56,13 @@ public class SimpleScoreboard {
 	private static final List<SimpleScoreboard> registeredBoards = new ArrayList<>();
 
 	/**
+	 * Cache flags for performance purposes.
+	 */
+	private final boolean atLeast1_13 = MinecraftVersion.atLeast(MinecraftVersion.V.v1_13);
+	private final boolean atLeast1_18 = MinecraftVersion.atLeast(MinecraftVersion.V.v1_18);
+	private final boolean below1_13 = MinecraftVersion.olderThan(V.v1_13);
+
+	/**
 	 * Stored scoreboard lines
 	 */
 	private final List<String> rows = new ArrayList<>();
@@ -167,7 +174,7 @@ public class SimpleScoreboard {
 	 * @param title the title to set
 	 */
 	public final void setTitle(String title) {
-		final int maxTitleLength = MinecraftVersion.atLeast(MinecraftVersion.V.v1_13) ? 128 : 32;
+		final int maxTitleLength = this.atLeast1_13 ? 128 : 32;
 
 		this.title = title.length() > maxTitleLength ? title.substring(0, maxTitleLength) : title;
 		this.title = this.title.endsWith(COLOR_CHAR) ? this.title.substring(0, this.title.length() - 1) : this.title;
@@ -449,6 +456,7 @@ public class SimpleScoreboard {
 
 		if (mainboard == null) {
 			mainboard = scoreboard.registerNewObjective("mainboard", "dummy");
+
 			mainboard.setDisplayName(colorizedTitle);
 			mainboard.setDisplaySlot(DisplaySlot.SIDEBAR);
 		}
@@ -461,15 +469,14 @@ public class SimpleScoreboard {
 			Team line = scoreboard.getTeam("line" + scoreboardLineNumber);
 
 			if (lineNumber < this.rows.size()) {
+
 				if (line == null)
 					line = scoreboard.registerNewTeam("line" + scoreboardLineNumber);
 
 				final String scoreboardLineRaw = this.rows.get(lineNumber).replace("{player}", player.getName());
-				final boolean mc1_13 = MinecraftVersion.atLeast(MinecraftVersion.V.v1_13);
-				final boolean mc1_18 = MinecraftVersion.atLeast(MinecraftVersion.V.v1_18);
 				final String finishedRow = CompChatColor.translateColorCodes(replaceTheme(this.replaceVariables(player, scoreboardLineRaw)));
 				final boolean rowUsed = rowsDone.contains(finishedRow);
-				final int[] splitPoints = { mc1_13 ? 64 : 16, mc1_18 ? 32767 : 40, mc1_13 ? 64 : 16 };
+				final int[] splitPoints = { this.atLeast1_13 ? 64 : 16, this.atLeast1_18 ? 32767 : 40, this.atLeast1_13 ? 64 : 16 };
 
 				if (rowUsed)
 					splitPoints[1] = splitPoints[1] - 2;
@@ -478,7 +485,7 @@ public class SimpleScoreboard {
 				final String prefix = copy.isEmpty() ? "" : copy.get(0);
 				String entry = copy.size() < 2 ? COLOR_CHAR + COLORS[lineNumber] + COLOR_CHAR + "r" : copy.get(1) + (rowUsed ? COLOR_CHAR + COLORS[lineNumber] : "");
 
-				if (MinecraftVersion.olderThan(V.v1_13) && entry.length() > 16)
+				if (this.below1_13 && entry.length() > 16)
 					entry = entry.substring(0, 16);
 
 				final String suffix = copy.size() < 3 ? "" : copy.get(2);
@@ -512,6 +519,7 @@ public class SimpleScoreboard {
 
 				mainboard.getScore(entry).setScore(scoreboardLineNumber);
 				rowsDone.add(finishedRow);
+
 			} else if (line != null) {
 				for (final String oldEntry : line.getEntries())
 					scoreboard.resetScores(oldEntry);
@@ -527,7 +535,7 @@ public class SimpleScoreboard {
 	 * @return The method will split the text at the given splitPoints and will copy the colors over
 	 */
 	private List<String> copyColors(String text, int... splitPoints) {
-		//Removes useless colors in front of only spaces (e.g. [§a     §aText] becomes [     §aText])
+		// Removes useless colors in front of only spaces (e.g. [§a     §aText] becomes [     §aText])
 		final Pattern spaceMatcher = Pattern.compile("^( )+(" + COLOR_CHAR + ")");
 		final List<String> splitText = new ArrayList<>();
 

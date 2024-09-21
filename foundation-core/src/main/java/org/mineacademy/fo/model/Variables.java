@@ -197,6 +197,8 @@ public final class Variables {
 		replacements.put("prefix_error", MessengerCore.getErrorPrefix());
 		replacements.put("prefix_question", MessengerCore.getQuestionPrefix());
 		replacements.put("prefix_announce", MessengerCore.getAnnouncePrefix());
+		replacements.put("plugin_name", Platform.getPlugin().getName());
+		replacements.put("plugin_version", Platform.getPlugin().getVersion());
 		replacements.put("server_name", Platform.hasCustomServerName() ? Platform.getCustomServerName() : "");
 		replacements.put("date", TimeUtil.getFormattedDate());
 		replacements.put("date_short", TimeUtil.getFormattedDateShort());

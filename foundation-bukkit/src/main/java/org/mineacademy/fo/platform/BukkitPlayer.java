@@ -28,24 +28,24 @@ import net.md_5.bungee.api.ChatMessageType;
 @Getter
 public class BukkitPlayer extends FoundationPlayer {
 
-	private final CommandSender sender;
+	private final CommandSender commandSender;
 	private final boolean isPlayer;
 	private final Player player;
 
 	public BukkitPlayer(@NonNull CommandSender sender) {
-		this.sender = sender;
+		this.commandSender = sender;
 		this.isPlayer = sender instanceof Player;
 		this.player = this.isPlayer ? (Player) sender : null;
 	}
 
 	@Override
 	protected boolean hasPermission0(String permission) {
-		return this.sender.hasPermission(permission);
+		return this.commandSender.hasPermission(permission);
 	}
 
 	@Override
 	public boolean isConsole() {
-		return this.sender instanceof ConsoleCommandSender;
+		return this.commandSender instanceof ConsoleCommandSender;
 	}
 
 	@Override
@@ -55,7 +55,7 @@ public class BukkitPlayer extends FoundationPlayer {
 
 	@Override
 	public boolean isDiscord() {
-		return this.sender instanceof DiscordSender;
+		return this.commandSender instanceof DiscordSender;
 	}
 
 	@Override
@@ -69,8 +69,13 @@ public class BukkitPlayer extends FoundationPlayer {
 	}
 
 	@Override
+	public boolean isCommandSender() {
+		return true;
+	}
+
+	@Override
 	protected String getSenderName0() {
-		return this.sender.getName();
+		return this.commandSender.getName();
 	}
 
 	@Override
@@ -84,7 +89,7 @@ public class BukkitPlayer extends FoundationPlayer {
 	@Override
 	public void sendActionBar(SimpleComponent message) {
 		if (!this.isPlayer || MinecraftVersion.olderThan(V.v1_8))
-			this.sender.sendMessage(message.toLegacy());
+			this.commandSender.sendMessage(message.toLegacy());
 
 		else
 			try {
@@ -101,7 +106,7 @@ public class BukkitPlayer extends FoundationPlayer {
 			BossBarInternals.getInstance().sendMessage(this.player, message.toLegacy(), progress, color, overlay);
 
 		} else
-			this.sender.sendMessage(message.toLegacy());
+			this.commandSender.sendMessage(message.toLegacy());
 	}
 
 	@Override
@@ -110,7 +115,7 @@ public class BukkitPlayer extends FoundationPlayer {
 			BossBarInternals.getInstance().sendTimedMessage(this.player, message.toLegacy(), secondsToShow, progress, color, overlay);
 
 		} else
-			this.sender.sendMessage(message.toLegacy());
+			this.commandSender.sendMessage(message.toLegacy());
 	}
 
 	@Override
@@ -166,7 +171,7 @@ public class BukkitPlayer extends FoundationPlayer {
 			this.player.sendRawMessage(message);
 
 		else
-			this.sender.sendMessage(message);
+			this.commandSender.sendMessage(message);
 	}
 
 	@Override
@@ -183,7 +188,7 @@ public class BukkitPlayer extends FoundationPlayer {
 			final String legacy = SimpleComponent.fromAdventure(component).toLegacy();
 
 			// Console does not send empty messages so we add a space
-			this.sender.sendMessage(legacy.isEmpty() ? " " : legacy);
+			this.commandSender.sendMessage(legacy.isEmpty() ? " " : legacy);
 			return;
 		}
 
@@ -197,11 +202,11 @@ public class BukkitPlayer extends FoundationPlayer {
 				this.player.spigot().sendMessage(Remain.convertJsonToBungee(json));
 
 			} catch (final NoSuchMethodError ex) {
-				this.sender.sendMessage(SimpleComponent.fromAdventure(component).toLegacy());
+				this.commandSender.sendMessage(SimpleComponent.fromAdventure(component).toLegacy());
 			}
 
 		} else
-			this.sender.spigot().sendMessage(Remain.convertAdventureToBungee(component));
+			this.commandSender.spigot().sendMessage(Remain.convertAdventureToBungee(component));
 	}
 
 	@Override

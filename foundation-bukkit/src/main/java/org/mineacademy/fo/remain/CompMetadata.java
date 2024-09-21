@@ -15,6 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -112,7 +113,18 @@ public final class CompMetadata {
 			setPersistentMetadata(entity, key, value);
 
 		else
-			MetadataFile.getInstance().setMetadata(entity, key, value);
+			setFileMetadata(entity.getUniqueId(), key, value);
+	}
+
+	/**
+	 * Attempts to set a persistent metadata tag with value for entity using file storage (metadata.yml)
+	 *
+	 * @param entityUid
+	 * @param key
+	 * @param value
+	 */
+	public static void setFileMetadata(@NonNull final UUID entityUid, @NonNull final String key, final String value) {
+		MetadataFile.getInstance().setMetadata(entityUid, key, value);
 	}
 
 	/**
@@ -225,7 +237,18 @@ public final class CompMetadata {
 			return getPersistentMetadata(entity, key);
 
 		} else
-			return MetadataFile.getInstance().getMetadata(entity, key);
+			return getFileMetadata(entity.getUniqueId(), key);
+	}
+
+	/**
+	 * Attempts to get the entity's metadata from metadata.yml file
+	 *
+	 * @param entityUid
+	 * @param key
+	 * @return the tag, or null
+	 */
+	public static String getFileMetadata(@NonNull final UUID entityUid, @NonNull final String key) {
+		return MetadataFile.getInstance().getMetadata(entityUid, key);
 	}
 
 	/**
@@ -369,6 +392,7 @@ public final class CompMetadata {
 	 * Due to lack of persistent metadata implementation until Minecraft 1.14.x,
 	 * we store them manually.
 	 */
+	@Getter
 	public static final class MetadataFile extends YamlConfig implements Listener {
 
 		@Getter
@@ -377,7 +401,7 @@ public final class CompMetadata {
 		/**
 		 * Stores entity metadata by UUID
 		 */
-		private final Map<UUID, Set<String>> entityMetadata = new HashMap<>();
+		private final Map<UUID, Map<String, String>> entityMetadata = new HashMap<>();
 
 		/**
 		 * Stores tile entity metadata by Location
@@ -387,16 +411,26 @@ public final class CompMetadata {
 		private boolean loaded = false;
 
 		private MetadataFile() {
-			if (!hasPersistentMetadata) {
-				this.setPathPrefix("Metadata");
+			this.migrateOldFile();
+			this.setPathPrefix("Metadata");
+			this.setHeader(
+					"-------------------------------------------------------------------------------------------------",
+					" DO NOT EDIT - THIS FILE IS MACHINE-GENERATED",
+					" ",
+					" Stores metadata for entities and blocks either on MC < 1.14 or manually by plugin developers.",
+					"-------------------------------------------------------------------------------------------------");
+		}
 
-				this.setHeader(
-						"-------------------------------------------------------------------------------------------------",
-						"This file is used to store metadata for entities and blocks in Minecraft versions below 1.14.",
-						"If you delete this file or upgrade to Minecraft 1.14+, all metadata will be lost.",
-						"",
-						"THIS FILE IS MACHINE GENERATED. DO NOT EDIT",
-						"-------------------------------------------------------------------------------------------------");
+		private void migrateOldFile() {
+			final File legacyFile = FileUtil.getFile("legacy-metadata.yml");
+
+			if (legacyFile.exists()) {
+				final File newFile = FileUtil.getFile("metadata.yml");
+
+				if (newFile.exists())
+					legacyFile.delete();
+				else
+					legacyFile.renameTo(newFile);
 			}
 		}
 
@@ -404,7 +438,7 @@ public final class CompMetadata {
 			if (!this.loaded) {
 
 				// Avoid file creation unless actually used in the set method below
-				final File file = FileUtil.getFile("legacy-metadata.yml");
+				final File file = FileUtil.getFile("metadata.yml");
 
 				if (file.exists())
 					this.load(file);
@@ -424,23 +458,29 @@ public final class CompMetadata {
 
 		@Override
 		protected boolean canSave() {
-			return !hasPersistentMetadata && this.getBoolean("Initialized", false);
+			return this.getBoolean("Initialized", false);
 		}
 
 		@Override
 		protected void onSave() {
-			this.set("Entity", this.entityMetadata);
-			this.set("Block", this.blockMetadata);
+			this.set("Entity", this.entityMetadata.isEmpty() ? null : this.entityMetadata);
+			this.set("Block", this.blockMetadata.isEmpty() ? null : this.blockMetadata);
+
+			if (this.entityMetadata.isEmpty() && this.blockMetadata.isEmpty())
+				this.set("Initialized", null);
 		}
 
 		@EventHandler
 		public void onEntityDeath(final EntityDeathEvent event) {
 			final Entity entity = event.getEntity();
-			final UUID uniqueId = entity.getUniqueId();
 
-			this.entityMetadata.remove(uniqueId);
+			if (!(entity instanceof Player)) {
+				final UUID uniqueId = entity.getUniqueId();
 
-			//this.save(); -> handled in onPluginStop()
+				this.entityMetadata.remove(uniqueId);
+
+				//this.save(); -> handled in onPluginStop()
+			}
 		}
 
 		private void loadEntities() {
@@ -448,18 +488,37 @@ public final class CompMetadata {
 
 			for (final String uuidString : this.getMap("Entity").keySet()) {
 				final UUID uuid = UUID.fromString(uuidString);
+				final Object raw = this.getObject("Entity." + uuidString);
 
-				// Remove broken keys
-				if (!(this.getObject("Entity." + uuidString) instanceof List)) {
-					this.set("Entity." + uuidString, null);
+				if (raw instanceof List) {
+					final List<String> metadata = (List<String>) raw;
 
-					continue;
+					if (!metadata.isEmpty()) {
+						final Map<String, String> converted = new HashMap<>();
+
+						for (final String meta : metadata) {
+							final String[] parts = meta.split(DELIMITER);
+
+							if (parts.length == 3 && parts[0].equals(SimplePlugin.getInstance().getName()))
+								converted.put(parts[1], parts[2]);
+						}
+
+						this.entityMetadata.put(uuid, converted);
+					}
 				}
 
-				final List<String> metadata = this.getStringList("Entity." + uuidString);
+				else {
+					final SerializedMap data = SerializedMap.of(raw);
 
-				if (!metadata.isEmpty())
-					this.entityMetadata.put(uuid, new HashSet<>(metadata));
+					if (!data.isEmpty()) {
+						final Map<String, String> converted = new HashMap<>();
+
+						for (final Map.Entry<String, Object> entry : data.entrySet())
+							converted.put(entry.getKey(), entry.getValue().toString());
+
+						this.entityMetadata.put(uuid, converted);
+					}
+				}
 			}
 
 			Common.runLater(4, () -> {
@@ -467,8 +526,12 @@ public final class CompMetadata {
 					final UUID uniqueId = iterator.next();
 					final Entity entity = Remain.getEntity(uniqueId);
 
-					if (entity == null)
+					if (entity == null) {
+						if (Remain.getOfflinePlayerByUUID(uniqueId).hasPlayedBefore())
+							continue;
+
 						iterator.remove();
+					}
 				}
 
 				if (!this.entityMetadata.isEmpty())
@@ -494,48 +557,36 @@ public final class CompMetadata {
 				this.set("Initialized", true);
 		}
 
-		protected String getMetadata(final Entity entity, @NonNull final String key) {
+		protected String getMetadata(final UUID entityUid, @NonNull final String key) {
 			this.loadIfHasnt();
 
-			final UUID uniqueId = entity.getUniqueId();
-			final Set<String> metadata = this.entityMetadata.getOrDefault(uniqueId, new HashSet<>());
+			final Map<String, String> metadata = this.entityMetadata.get(entityUid);
 
-			for (final Iterator<String> iterator = metadata.iterator(); iterator.hasNext();) {
-				final String meta = iterator.next();
-				final String value = getTag(meta, key);
+			if (metadata != null) {
+				final String value = metadata.get(key);
 
-				if (value != null && !value.isEmpty())
-					return value;
+				return value != null && !value.isEmpty() ? value : null;
 			}
 
 			return null;
 		}
 
-		protected void setMetadata(final Entity entity, @NonNull final String key, final String value) {
+		protected void setMetadata(final UUID entityUid, @NonNull final String key, final String value) {
 			this.loadIfHasnt();
 			this.set("Initialized", true);
 
-			final UUID uniqueId = entity.getUniqueId();
-			final Set<String> metadata = this.entityMetadata.getOrDefault(uniqueId, new HashSet<>());
+			final Map<String, String> metadata = this.entityMetadata.getOrDefault(entityUid, new HashMap<>());
 			final boolean remove = value == null || "".equals(value);
 
-			// Remove the old value
-			for (final Iterator<String> iterator = metadata.iterator(); iterator.hasNext();) {
-				final String meta = iterator.next();
-
-				if (getTag(meta, key) != null)
-					iterator.remove();
-			}
-
-			if (!remove) {
-				final String formatted = formatTag(key, value);
-
-				metadata.add(formatted);
-				this.entityMetadata.put(uniqueId, metadata);
-			}
+			if (remove)
+				metadata.remove(key);
+			else
+				metadata.put(key, value);
 
 			if (metadata.isEmpty())
-				this.entityMetadata.remove(uniqueId);
+				this.entityMetadata.remove(entityUid);
+			else
+				this.entityMetadata.put(entityUid, metadata);
 
 			//this.save("Entity", this.entityMetadata); -> handled in onPluginStop()
 		}

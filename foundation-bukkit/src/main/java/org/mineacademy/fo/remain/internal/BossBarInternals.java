@@ -3,6 +3,7 @@ package org.mineacademy.fo.remain.internal;
 import static org.mineacademy.fo.ReflectionUtil.getNMSClass;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -51,12 +52,12 @@ public final class BossBarInternals implements Listener {
 	/**
 	 * The player currently viewing the boss bar
 	 */
-	private final HashMap<UUID, NMSDragon> players = new HashMap<>();
+	private final Map<UUID, NMSDragon> players = new HashMap<>();
 
 	/**
 	 * Currently running timers (for temporary boss bars)
 	 */
-	private final HashMap<UUID, Task> timers = new HashMap<>();
+	private final Map<UUID, Task> timers = new HashMap<>();
 
 	// Singleton
 	private BossBarInternals() {

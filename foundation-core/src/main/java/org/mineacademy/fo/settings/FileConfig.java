@@ -367,13 +367,13 @@ public abstract class FileConfig extends ConfigSection {
 
 	/*public final boolean isConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-
+	
 		return this.isMemorySection(path);
 	}*/
 
 	/*public final MemorySection getConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-
+	
 		return this.retrieveMemorySection(path);
 	}*/
 
@@ -832,8 +832,8 @@ public abstract class FileConfig extends ConfigSection {
 	 * @param valueDeserializeParams
 	 * @return
 	 */
-	public final <Key, Value> LinkedHashMap<Key, Value> getMap(@NonNull String path, final Class<Key> keyType, final Class<Value> valueType, Object... valueDeserializeParams) {
-		final LinkedHashMap<Key, Value> map = new LinkedHashMap<>();
+	public final <Key, Value> Map<Key, Value> getMap(@NonNull String path, final Class<Key> keyType, final Class<Value> valueType, Object... valueDeserializeParams) {
+		final Map<Key, Value> map = new LinkedHashMap<>();
 		final Object savedKeys = this.getObject(path);
 
 		if (savedKeys != null)

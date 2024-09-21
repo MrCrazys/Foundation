@@ -152,32 +152,16 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 	 * Load the necessary libraries for the plugin to work.
 	 */
 	private void loadLibraries() {
+		this.loadLibrary("org.snakeyaml", "snakeyaml-engine", "2.8");
 
-		this.loadLibrary("org.snakeyaml", "snakeyaml-engine", "2.7");
+		if (!ReflectionUtil.isClassAvailable("com.google.gson.Gson"))
+			this.loadLibrary("com.google.code.gson", "gson", "2.11.0");
 
 		if (!ReflectionUtil.isClassAvailable("org.openjdk.nashorn.api.scripting.NashornScriptEngine"))
 			this.loadLibrary("org.openjdk.nashorn", "nashorn-core", "15.4");
 
 		if (!ReflectionUtil.isClassAvailable("net.md_5.bungee.chat.BaseComponentSerializer"))
 			this.loadLibrary("net.md-5", "bungeecord-api", "1.16-R0.1");
-
-		if (!ReflectionUtil.isClassAvailable("com.google.gson.Gson"))
-			this.loadLibrary("com.google.code.gson", "gson", "2.11.0");
-
-		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.event.HoverEventSource"))
-			this.loadLibrary("net.kyori", "adventure-api", "4.17.0");
-
-		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer"))
-			this.loadLibrary("net.kyori", "adventure-text-serializer-plain", "4.17.0");
-
-		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer"))
-			this.loadLibrary("net.kyori", "adventure-text-serializer-legacy", "4.17.0");
-
-		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.gson.GsonComponentSerializer"))
-			this.loadLibrary("net.kyori", "adventure-text-serializer-gson", "4.17.0");
-
-		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.bungeecord.BungeeComponentSerializer"))
-			this.loadLibrary("net.kyori", "adventure-text-serializer-bungeecord", "4.3.4");
 
 		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.minimessage.MiniMessage"))
 
@@ -201,6 +185,21 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 
 			} else
 				this.loadLibrary("net.kyori", "adventure-text-minimessage", "4.17.0");
+
+		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.audience.Audience"))
+			this.loadLibrary("net.kyori", "adventure-api", "4.17.0");
+
+		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer"))
+			this.loadLibrary("net.kyori", "adventure-text-serializer-plain", "4.17.0");
+
+		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer"))
+			this.loadLibrary("net.kyori", "adventure-text-serializer-legacy", "4.17.0");
+
+		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.gson.GsonComponentSerializer"))
+			this.loadLibrary("net.kyori", "adventure-text-serializer-gson", "4.17.0");
+
+		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.serializer.bungeecord.BungeeComponentSerializer"))
+			this.loadLibrary("net.kyori", "adventure-text-serializer-bungeecord", "4.3.4");
 	}
 
 	@Override

@@ -177,7 +177,7 @@ public abstract class SimplePrompt extends ValidatingPrompt {
 	 * @param message
 	 */
 	protected final void tell(final Conversable conversable, String message) {
-		Platform.toPlayer(conversable).sendMessage(SimpleComponent.fromMini(this.getCustomPrefix() != null ? this.getCustomPrefix() + message : message));
+		SimpleComponent.fromMini(this.getCustomPrefix() != null ? this.getCustomPrefix() + message : message).send(Platform.toPlayer(conversable));
 	}
 
 	/**
@@ -187,7 +187,7 @@ public abstract class SimplePrompt extends ValidatingPrompt {
 	 * @param message
 	 */
 	protected final void tell(final Conversable conversable, SimpleComponent message) {
-		Platform.toPlayer(conversable).sendMessage(SimpleComponent.fromMini(this.getCustomPrefix() != null ? this.getCustomPrefix() : "").append(message));
+		SimpleComponent.fromMini(this.getCustomPrefix() != null ? this.getCustomPrefix() : "").append(message).send(Platform.toPlayer(conversable));
 	}
 
 	/**

@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -299,7 +298,7 @@ public abstract class YamlStaticConfig {
 		return TEMPORARY_INSTANCE.getMap(path);
 	}
 
-	protected static final <Key, Value> LinkedHashMap<Key, Value> getMap(final String path, final Class<Key> keyType, final Class<Value> valueType) {
+	protected static final <Key, Value> Map<Key, Value> getMap(final String path, final Class<Key> keyType, final Class<Value> valueType) {
 		return TEMPORARY_INSTANCE.getMap(path, keyType, valueType);
 	}
 }

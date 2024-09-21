@@ -180,14 +180,12 @@ public abstract class PacketListener {
 		private final Set<String> processedPlayers = new HashSet<>();
 
 		/**
-		 * The packet processing mode for fastest performance
-		 */
-		private int mode = -1;
-
-		/**
-		 * The action bar lookup mode for fastest performance
+		 * Cached flags for performance purposes.
 		 */
 		private int actionBarMode = -1;
+		private Boolean hasAdventure = null;
+		private Boolean hasBungee = null;
+		private Boolean hasIChatBase = null;
 
 		/**
 		 * Create new chat listener
@@ -230,7 +228,7 @@ public abstract class PacketListener {
 					return;
 
 			} else if (this.actionBarMode == 2) {
-				if (packet.getBytes().read(0) != (byte) 0)
+				if (packet.getBytes().read(0) == (byte) 0)
 					return;
 
 			} else if (this.actionBarMode == 3) {
@@ -238,51 +236,47 @@ public abstract class PacketListener {
 					return;
 			}
 
+			// Cache booleans for faster performance: 0.3ms vs ~1ms
+			if (this.hasAdventure == null) {
+				this.hasAdventure = !event.getPacket().getModifier().withType(Component.class).getFields().isEmpty();
+				this.hasBungee = !event.getPacket().getModifier().withType(BaseComponent[].class).getFields().isEmpty();
+				this.hasIChatBase = !event.getPacket().getChatComponents().getFields().isEmpty();
+			}
+
 			// Lock processing to one instance only to prevent another packet filtering
-			// in a filtering
 			try {
 				this.processedPlayers.add(playerName);
 
-				StructureModifier<Component> modifierAdventure = null;
-				StructureModifier<BaseComponent[]> modifierBaseComponent = null;
-				StructureModifier<WrappedChatComponent> modifierIChatBaseComponent = null;
+				final StructureModifier<Component> modifierAdventure = this.hasAdventure ? event.getPacket().getModifier().withType(Component.class) : null;
+				final StructureModifier<BaseComponent[]> modifierBaseComponent = this.hasBungee ? event.getPacket().getModifier().withType(BaseComponent[].class) : null;
+				final StructureModifier<WrappedChatComponent> modifierIChatBaseComponent = this.hasIChatBase ? event.getPacket().getChatComponents() : null;
 
-				String json;
+				String json = null;
 
-				if (this.mode == -1) {
-					modifierAdventure = event.getPacket().getModifier().withType(Component.class);
-					modifierBaseComponent = event.getPacket().getModifier().withType(BaseComponent[].class);
-					modifierIChatBaseComponent = event.getPacket().getChatComponents();
+				if (this.hasAdventure) {
+					final Component component = modifierAdventure.read(0);
 
-					if (!modifierAdventure.getFields().isEmpty())
-						this.mode = 1;
-
-					else if (!modifierBaseComponent.getFields().isEmpty())
-						this.mode = 2;
-
-					else if (!modifierIChatBaseComponent.getFields().isEmpty())
-						this.mode = 3;
+					if (component != null)
+						json = GsonComponentSerializer.gson().serialize(component);
 				}
 
-				if (this.mode == 1) {
-					modifierAdventure = event.getPacket().getModifier().withType(Component.class);
+				if (json == null && !"".equals(json) && !"{}".equals(json) && this.hasBungee) {
+					final BaseComponent[] components = modifierBaseComponent.read(0);
 
-					json = GsonComponentSerializer.gson().serialize(modifierAdventure.read(0));
+					if (components != null)
+						json = GsonComponentSerializer.gson().serialize(BungeeComponentSerializer.get().deserialize(components));
+				}
 
-				} else if (this.mode == 2) {
-					modifierBaseComponent = event.getPacket().getModifier().withType(BaseComponent[].class);
+				if (json == null && !"".equals(json) && !"{}".equals(json) && this.hasIChatBase) {
+					final WrappedChatComponent chatComponent = modifierIChatBaseComponent.read(0);
 
-					json = GsonComponentSerializer.gson().serialize(BungeeComponentSerializer.get().deserialize(modifierBaseComponent.read(0)));
+					if (chatComponent != null)
+						json = chatComponent.getJson();
+				}
 
-				} else if (this.mode == 3) {
-					modifierIChatBaseComponent = event.getPacket().getChatComponents();
+				if (json != null && json.length() < 50_000) {
 
-					json = modifierIChatBaseComponent.read(0).getJson();
-
-				} else
-					throw new FoException("Unknown way to deserialize chat packet " + packet.getHandle().getClass());
-
-				if (json.length() < 50_000) {
+					// This flag effectivelly doubles processing time from ~0.3ms to ~0.6ms that is why it needs to be explicitly enabled
 					final boolean editJson = this.editJson();
 					final Component oldJson = editJson ? GsonComponentSerializer.gson().deserialize(json) : null;
 
@@ -299,13 +293,13 @@ public abstract class PacketListener {
 						final Component newJson = GsonComponentSerializer.gson().deserialize(json);
 
 						if (!newJson.equals(oldJson)) {
-							if (this.mode == 1)
+							if (this.hasAdventure)
 								modifierAdventure.write(0, newJson);
 
-							else if (this.mode == 2)
+							else if (this.hasBungee)
 								modifierBaseComponent.write(0, BungeeComponentSerializer.get().serialize(newJson));
 
-							else if (this.mode == 3)
+							else if (this.hasIChatBase)
 								modifierIChatBaseComponent.write(0, WrappedChatComponent.fromJson(json));
 						}
 					}

@@ -51,174 +51,168 @@ final class FoundationPacketListener extends PacketListener {
 	@Override
 	public void onRegister() {
 
-		try {
-			// To ensure, the client isn't trying to create an item with our fake enchantment lore
-			// Because that would cause duplicate entries if the enchantment is upgraded/remove
-			// Ex:
-			//   BlackNova II (fake lore)
-			//   BlackNova I  (actual lore of the item)
-			this.addReceivingListener(PacketType.Play.Client.SET_CREATIVE_SLOT, event -> {
-				final PacketContainer packet = event.getPacket();
-				final ItemStack item = packet.getItemModifier().readSafely(0);
+		// To ensure, the client isn't trying to create an item with our fake enchantment lore
+		// Because that would cause duplicate entries if the enchantment is upgraded/remove
+		// Ex:
+		//   BlackNova II (fake lore)
+		//   BlackNova I  (actual lore of the item)
+		this.addReceivingListener(PacketType.Play.Client.SET_CREATIVE_SLOT, event -> {
+			final PacketContainer packet = event.getPacket();
+			final ItemStack item = packet.getItemModifier().readSafely(0);
 
-				if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
-					final ItemStack newItem = SimpleEnchantment.removeEnchantmentLores(item);
+			if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
+				final ItemStack newItem = SimpleEnchantment.removeEnchantmentLores(item);
 
-					if (newItem != null)
-						packet.getItemModifier().write(0, newItem);
-				}
-			});
+				if (newItem != null)
+					packet.getItemModifier().write(0, newItem);
+			}
+		});
 
-			// Auto placement of our lore when items are custom enchanted
-			this.addSendingListener(PacketType.Play.Server.SET_SLOT, event -> {
-				final StructureModifier<ItemStack> itemModifier = event.getPacket().getItemModifier();
-				ItemStack item = itemModifier.read(0);
+		// Auto placement of our lore when items are custom enchanted
+		this.addSendingListener(PacketType.Play.Server.SET_SLOT, event -> {
+			final StructureModifier<ItemStack> itemModifier = event.getPacket().getItemModifier();
+			ItemStack item = itemModifier.read(0);
 
-				if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
-					item = SimpleEnchantment.addEnchantmentLores(item);
+			if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
+				item = SimpleEnchantment.addEnchantmentLores(item);
 
-					// Write the item
-					if (item != null)
-						itemModifier.write(0, item);
-				}
-			});
+				// Write the item
+				if (item != null)
+					itemModifier.write(0, item);
+			}
+		});
 
-			this.addSendingListener(PacketType.Play.Server.WINDOW_ITEMS, event -> {
-				final PacketContainer packet = event.getPacket();
+		this.addSendingListener(PacketType.Play.Server.WINDOW_ITEMS, event -> {
+			final PacketContainer packet = event.getPacket();
 
-				// for older versions, this is not needed because I believe they use an array
-				final StructureModifier<List<ItemStack>> itemListModifier = packet.getItemListModifier();
-				for (int i = 0; i < itemListModifier.size(); i++) {
-					final List<ItemStack> itemStacks = itemListModifier.read(i);
-					if (itemStacks != null) {
-						boolean changed = false;
-						final int size = itemStacks.size();
-						for (int j = 0; j < size; j++) {
-
-							ItemStack item = itemStacks.get(j);
-							if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
-								item = SimpleEnchantment.addEnchantmentLores(item);
-
-								if (item == null)
-									continue;
-
-								itemStacks.set(j, item);
-								changed = true;
-							}
-						}
-						if (changed)
-							itemListModifier.write(i, itemStacks);
-					}
-				}
-
-				// Not needed for 1.13+ since they changed it to a list according to someone on the spigot forum
-				// Though, why not
-				final StructureModifier<ItemStack[]> itemArrayModifier = packet.getItemArrayModifier();
-				for (int i = 0; i < itemArrayModifier.size(); i++) {
-					final ItemStack[] itemStacks = itemArrayModifier.read(i);
-					if (itemStacks != null) {
-						boolean changed = false;
-
-						for (int j = 0; j < itemStacks.length; j++) {
-							ItemStack item = itemStacks[j];
-							if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
-								item = SimpleEnchantment.addEnchantmentLores(item);
-								if (item == null)
-									continue;
-
-								itemStacks[j] = item;
-								changed = true;
-							}
-						}
-						if (changed)
-							itemArrayModifier.write(i, itemStacks);
-					}
-				}
-			});
-
-			if (MinecraftVersion.atLeast(V.v1_9))
-				this.addSendingListener(PacketType.Play.Server.OPEN_WINDOW_MERCHANT, event -> {
-					final PacketContainer packet = event.getPacket();
-					final List<MerchantRecipe> ls = packet.getMerchantRecipeLists().read(0);
-
+			// for older versions, this is not needed because I believe they use an array
+			final StructureModifier<List<ItemStack>> itemListModifier = packet.getItemListModifier();
+			for (int i = 0; i < itemListModifier.size(); i++) {
+				final List<ItemStack> itemStacks = itemListModifier.read(i);
+				if (itemStacks != null) {
 					boolean changed = false;
+					final int size = itemStacks.size();
+					for (int j = 0; j < size; j++) {
 
-					for (int i = 0; i < ls.size(); i++) {
-						final MerchantRecipe recipe = ls.get(i);
-						ItemStack item = recipe.getResult();
-
-						if (!CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
+						ItemStack item = itemStacks.get(j);
+						if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
 							item = SimpleEnchantment.addEnchantmentLores(item);
 
 							if (item == null)
 								continue;
 
-							final MerchantRecipe newRecipe = new MerchantRecipe(item, recipe.getUses(), recipe.getMaxUses(), recipe.hasExperienceReward(), recipe.getVillagerExperience(), recipe.getPriceMultiplier());
-							newRecipe.setIngredients(recipe.getIngredients());
-
-							ls.set(i, newRecipe);
-
+							itemStacks.set(j, item);
 							changed = true;
 						}
 					}
-
 					if (changed)
-						packet.getMerchantRecipeLists().write(0, ls);
-				});
+						itemListModifier.write(i, itemStacks);
+				}
+			}
 
-			// "Fix" a Folia bug preventing Conversation API from working properly
-			if (Remain.isFolia())
-				this.addReceivingListener(PacketType.Play.Client.CHAT, event -> {
-					final String message = event.getPacket().getStrings().read(0);
-					final Player player = event.getPlayer();
+			// Not needed for 1.13+ since they changed it to a list according to someone on the spigot forum
+			// Though, why not
+			final StructureModifier<ItemStack[]> itemArrayModifier = packet.getItemArrayModifier();
+			for (int i = 0; i < itemArrayModifier.size(); i++) {
+				final ItemStack[] itemStacks = itemArrayModifier.read(i);
+				if (itemStacks != null) {
+					boolean changed = false;
 
-					if (player.isConversing()) {
-						player.acceptConversationInput(message);
+					for (int j = 0; j < itemStacks.length; j++) {
+						ItemStack item = itemStacks[j];
+						if (item != null && !CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
+							item = SimpleEnchantment.addEnchantmentLores(item);
+							if (item == null)
+								continue;
 
-						event.setCancelled(true);
-					}
-				});
-
-			// Support editing signs on legacy Minecraft versions
-			if (!Remain.hasPlayerOpenSignMethod())
-				this.addReceivingListener(PacketType.Play.Client.UPDATE_SIGN, event -> {
-					final Player player = event.getPlayer();
-					final MetadataValue rawMetadata = CompMetadata.getTempMetadata(player, FoConstants.NBT.METADATA_OPENED_SIGN);
-
-					if (rawMetadata == null)
-						return;
-
-					final Location metadataLocation = (Location) rawMetadata.value();
-
-					final BlockPosition position = event.getPacket().getBlockPositionModifier().read(0);
-					final WrappedChatComponent[] lines = event.getPacket().getChatComponentArrays().read(0);
-
-					final Location location = position.toLocation(player.getWorld());
-
-					if (location.equals(metadataLocation)) {
-						CompMetadata.removeTempMetadata(player, FoConstants.NBT.METADATA_OPENED_SIGN);
-
-						final Block block = player.getWorld().getBlockAt(location);
-						final BlockState state = block.getState();
-
-						if (state instanceof Sign) {
-							final Sign sign = (Sign) state;
-
-							for (int line = 0; line < lines.length; line++) {
-								final WrappedChatComponent component = lines[line];
-								final String signText = SimpleComponent.fromAdventureJson(component.getJson().replace("§f", "")).toLegacy();
-
-								sign.setLine(line, signText);
-							}
-
-							sign.update(true);
+							itemStacks[j] = item;
+							changed = true;
 						}
 					}
-				});
-		} catch (final Throwable t) {
-			t.printStackTrace();
+					if (changed)
+						itemArrayModifier.write(i, itemStacks);
+				}
+			}
+		});
 
-			System.exit(-1);
-		}
+		if (MinecraftVersion.atLeast(V.v1_9))
+			this.addSendingListener(PacketType.Play.Server.OPEN_WINDOW_MERCHANT, event -> {
+				final PacketContainer packet = event.getPacket();
+				final List<MerchantRecipe> ls = packet.getMerchantRecipeLists().read(0);
+
+				boolean changed = false;
+
+				for (int i = 0; i < ls.size(); i++) {
+					final MerchantRecipe recipe = ls.get(i);
+					ItemStack item = recipe.getResult();
+
+					if (!CompMaterial.isAir(item.getType()) && !CompItemFlag.HIDE_ENCHANTS.has(item)) {
+						item = SimpleEnchantment.addEnchantmentLores(item);
+
+						if (item == null)
+							continue;
+
+						final MerchantRecipe newRecipe = new MerchantRecipe(item, recipe.getUses(), recipe.getMaxUses(), recipe.hasExperienceReward(), recipe.getVillagerExperience(), recipe.getPriceMultiplier());
+						newRecipe.setIngredients(recipe.getIngredients());
+
+						ls.set(i, newRecipe);
+
+						changed = true;
+					}
+				}
+
+				if (changed)
+					packet.getMerchantRecipeLists().write(0, ls);
+			});
+
+		// "Fix" a Folia bug preventing Conversation API from working properly
+		if (Remain.isFolia())
+			this.addReceivingListener(PacketType.Play.Client.CHAT, event -> {
+				final String message = event.getPacket().getStrings().read(0);
+				final Player player = event.getPlayer();
+
+				if (player.isConversing()) {
+					player.acceptConversationInput(message);
+
+					event.setCancelled(true);
+				}
+			});
+
+		// Support editing signs on legacy Minecraft versions
+		if (!Remain.hasPlayerOpenSignMethod())
+			this.addReceivingListener(PacketType.Play.Client.UPDATE_SIGN, event -> {
+				final Player player = event.getPlayer();
+				final MetadataValue rawMetadata = CompMetadata.getTempMetadata(player, FoConstants.NBT.METADATA_OPENED_SIGN);
+
+				if (rawMetadata == null)
+					return;
+
+				final Location metadataLocation = (Location) rawMetadata.value();
+
+				final BlockPosition position = event.getPacket().getBlockPositionModifier().read(0);
+				final WrappedChatComponent[] lines = event.getPacket().getChatComponentArrays().read(0);
+
+				final Location location = position.toLocation(player.getWorld());
+
+				if (location.equals(metadataLocation)) {
+					CompMetadata.removeTempMetadata(player, FoConstants.NBT.METADATA_OPENED_SIGN);
+
+					final Block block = player.getWorld().getBlockAt(location);
+					final BlockState state = block.getState();
+
+					if (state instanceof Sign) {
+						final Sign sign = (Sign) state;
+
+						for (int line = 0; line < lines.length; line++) {
+							final WrappedChatComponent component = lines[line];
+							final String signText = SimpleComponent.fromAdventureJson(component.getJson().replace("§f", "")).toLegacy();
+
+							sign.setLine(line, signText);
+						}
+
+						sign.update(true);
+					}
+				}
+			});
 	}
 }

@@ -34,6 +34,6 @@ public final class Common extends CommonCore {
 	 * @param message
 	 */
 	public static void tell(@NonNull final CommandSender sender, SimpleComponent message) {
-		Platform.toPlayer(sender).sendMessage(message);
+		message.send(Platform.toPlayer(sender));
 	}
 }

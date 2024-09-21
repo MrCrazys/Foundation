@@ -169,8 +169,8 @@ public final class JavaScriptExecutor {
 				javascript = String.join("\n", replaced);
 			}
 
-			if (sender != null)
-				replacements.put("player", sender);
+			if (sender != null && sender.isCommandSender())
+				replacements.put("player", sender.getCommandSender());
 
 			return run(javascript, replacements);
 		}

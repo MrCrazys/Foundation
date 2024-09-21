@@ -656,13 +656,13 @@ public final class SerializedMap implements Iterable<Map.Entry<String, Object>> 
 	 * @param valueType
 	 * @return
 	 */
-	public <Key, Value> LinkedHashMap<Key, Value> getMap(@NonNull String path, final Class<Key> keyType, final Class<Value> valueType) {
+	public <Key, Value> Map<Key, Value> getMap(@NonNull String path, final Class<Key> keyType, final Class<Value> valueType) {
 		// The map we are creating, preserve order
-		final LinkedHashMap<Key, Value> map = new LinkedHashMap<>();
+		final Map<Key, Value> map = new LinkedHashMap<>();
 		final Object raw = this.map.get(path);
 
 		if (raw != null)
-			for (final Entry<?, ?> entry : of(this.language, raw).entrySet()) {
+			for (final Entry<?, ?> entry : of(Language.YAML, raw).entrySet()) {
 				final Key key = SerializeUtilCore.deserialize(this.language, keyType, entry.getKey());
 				final Value value = SerializeUtilCore.deserialize(this.language, valueType, entry.getValue());
 

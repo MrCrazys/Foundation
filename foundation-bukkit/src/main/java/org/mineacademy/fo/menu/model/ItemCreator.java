@@ -587,13 +587,11 @@ public final class ItemCreator {
 		color:
 		if (this.color != null)
 			if (compiledItem.getType().toString().contains("LEATHER")) {
-				if (MinecraftVersion.atLeast(V.v1_4)) {
-					Valid.checkBoolean(compiledMeta instanceof LeatherArmorMeta, "Expected a leather item, cannot apply color to " + compiledItem);
+				Valid.checkBoolean(compiledMeta instanceof LeatherArmorMeta, "Expected a leather item, cannot apply color to " + compiledItem);
+				((LeatherArmorMeta) compiledMeta).setColor(this.color.getColor());
 
-					((LeatherArmorMeta) compiledMeta).setColor(this.color.getColor());
-				}
-			} else // Hack: If you put WHITE_WOOL and a color, we automatically will change the material to the colorized version
-			if (MinecraftVersion.atLeast(V.v1_13)) {
+				// Hack: If you put WHITE_WOOL and a color, we automatically will change the material to the colorized version
+			} else if (MinecraftVersion.atLeast(V.v1_13)) {
 				final String dye = this.color.getDye().toString();
 				final List<String> colorableMaterials = Arrays.asList("BANNER", "BED", "CARPET", "CONCRETE", "GLAZED_TERRACOTTA", "SHULKER_BOX", "STAINED_GLASS",
 						"STAINED_GLASS_PANE", "TERRACOTTA", "WALL_BANNER", "WOOL");
@@ -803,12 +801,8 @@ public final class ItemCreator {
 		}
 
 		// Apply NBT tags
-		if (MinecraftVersion.atLeast(V.v1_7))
-			for (final Entry<String, String> entry : this.tags.entrySet())
-				compiledItem = CompMetadata.setMetadata(compiledItem, entry.getKey(), entry.getValue());
-
-		else if (!this.tags.isEmpty() && this.item != null)
-			Common.log("Item had unsupported tags " + this.tags + " that are not supported on MC " + MinecraftVersion.getFullVersion() + " Item: " + compiledItem);
+		for (final Entry<String, String> entry : this.tags.entrySet())
+			compiledItem = CompMetadata.setMetadata(compiledItem, entry.getKey(), entry.getValue());
 
 		return compiledItem;
 	}

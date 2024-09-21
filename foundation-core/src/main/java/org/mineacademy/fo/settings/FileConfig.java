@@ -78,7 +78,7 @@ public abstract class FileConfig extends ConfigSection {
 
 	public final void loadConfiguration(String from, String to) {
 		if (from != null) {
-			final List<String> defaultContent = FileUtil.getInternalFileContent(from);
+			final List<String> defaultContent = FileUtil.readLinesFromInternalPath(from);
 			ValidCore.checkNotNull(defaultContent, "Inbuilt " + from + " not found! Did you reload?");
 
 			// Load main
@@ -296,6 +296,8 @@ public abstract class FileConfig extends ConfigSection {
 
 		// Remove old key
 		this.set(fromRel, null);
+
+		CommonCore.log("&7Update " + this.getFile().getName() + ". Move &b'&f" + this.buildPathPrefix(fromRel) + "&b' &7to " + "&b'&f" + toAbs + "&b'" + "&r");
 	}
 
 	public final void set(String path, Object value) {
@@ -325,10 +327,6 @@ public abstract class FileConfig extends ConfigSection {
 	}
 
 	public final <T> T get(String path, Class<T> clazz) {
-		return this.getWithParams(path, clazz);
-	}
-
-	public final <T> T getWithParams(String path, Class<T> clazz, Object... deserializeParams) {
 		path = this.buildPathPrefix(path);
 
 		final Object object = this.retrieve(path);
@@ -337,7 +335,9 @@ public abstract class FileConfig extends ConfigSection {
 
 			// Copy over from defaults if set
 			if (this.hasDefaults()) {
-				final T defValue = this.defaults.getWithParams(path, clazz, deserializeParams);
+				final T defValue = this.defaults.get(path, clazz);
+
+				CommonCore.log("&7Updating " + this.getFile().getName() + " at &b'&f" + path + "&b' &7-> " + "&b'&f" + defValue.toString().replace("\n", ", ") + "&b'");
 
 				this.store(path, defValue);
 				return defValue;
@@ -349,7 +349,7 @@ public abstract class FileConfig extends ConfigSection {
 		if (clazz.isInstance(object))
 			return clazz.cast(object);
 
-		return SerializeUtilCore.deserialize(Language.YAML, clazz, object, deserializeParams);
+		return SerializeUtilCore.deserialize(Language.YAML, clazz, object);
 	}
 
 	// ------------------------------------------------------------------------------------------------------------
@@ -358,13 +358,13 @@ public abstract class FileConfig extends ConfigSection {
 
 	/*public final boolean isConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-
+	
 		return this.isMemorySection(path);
 	}*/
 
 	/*public final MemorySection getConfigurationSection(String path) {
 		path = this.buildPathPrefix(path);
-
+	
 		return this.retrieveMemorySection(path);
 	}*/
 

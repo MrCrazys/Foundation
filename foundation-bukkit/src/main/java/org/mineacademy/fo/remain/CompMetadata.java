@@ -86,8 +86,6 @@ public final class CompMetadata {
 	 * @return
 	 */
 	public static ItemStack setMetadata(@NonNull final ItemStack item, @NonNull final String key, final String value) {
-		Valid.checkBoolean(MinecraftVersion.atLeast(V.v1_7), "Using CompMetadata for ItemStacks requires Minecraft 1.7.10 or newer");
-
 		final boolean remove = value == null || "".equals(value);
 		final ItemStack clone = new ItemStack(item);
 
@@ -187,8 +185,6 @@ public final class CompMetadata {
 	 * @return
 	 */
 	public static String getMetadata(@NonNull final ItemStack item, @NonNull final String key) {
-		Valid.checkBoolean(MinecraftVersion.atLeast(V.v1_7), "Using CompMetadata for ItemStacks requires Minecraft 1.7.10 or newer");
-
 		return CompMaterial.isAir(item.getType()) ? null : NBT.get(item, nbt -> {
 			String value = Common.getOrNull(nbt.getString(key));
 

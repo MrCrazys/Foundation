@@ -17,8 +17,6 @@ import org.bukkit.plugin.Plugin;
 import org.mineacademy.fo.Common;
 import org.mineacademy.fo.MathUtilCore;
 import org.mineacademy.fo.Messenger;
-import org.mineacademy.fo.MinecraftVersion;
-import org.mineacademy.fo.MinecraftVersion.V;
 import org.mineacademy.fo.constants.FoConstants;
 import org.mineacademy.fo.model.ChatPaginator;
 import org.mineacademy.fo.model.HookManager;
@@ -131,7 +129,7 @@ final class FoundationListener implements Listener {
 		}
 
 		// Fill in the pagination line
-		if (MinecraftVersion.atLeast(V.v1_7) && pages.size() > 1) {
+		if (pages.size() > 1) {
 			player.sendMessage(" ");
 
 			final int pagesDigits = (int) (Math.log10(pages.size()) + 1);

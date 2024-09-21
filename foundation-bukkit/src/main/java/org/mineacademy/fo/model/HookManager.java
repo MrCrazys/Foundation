@@ -2,6 +2,8 @@ package org.mineacademy.fo.model;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,9 +31,8 @@ import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.mineacademy.fo.Common;
-import org.mineacademy.fo.MinecraftVersion;
-import org.mineacademy.fo.MinecraftVersion.V;
 import org.mineacademy.fo.PlayerUtil;
 import org.mineacademy.fo.ReflectionUtil;
 import org.mineacademy.fo.Valid;
@@ -276,8 +277,7 @@ public final class HookManager {
 			try {
 				protocolLibHook = new ProtocolLibHook();
 
-				if (MinecraftVersion.newerThan(V.v1_6))
-					Class.forName("com.comphenix.protocol.wrappers.WrappedChatComponent");
+				Class.forName("com.comphenix.protocol.wrappers.WrappedChatComponent");
 
 			} catch (final Throwable t) {
 				protocolLibHook = null;
@@ -3870,26 +3870,59 @@ class LandsHook {
 
 class LiteBansHook {
 
+	private final Set<String> mutedPlayerUids = new HashSet<>();
+	private final Object instance;
+	private final Method methodPrepareStatement;
+
+	LiteBansHook() {
+		final Class<?> classDatabase = ReflectionUtil.lookupClass("litebans.api.Database");
+
+		this.instance = ReflectionUtil.invokeStatic(classDatabase, "get");
+		this.methodPrepareStatement = ReflectionUtil.getMethod(classDatabase, "prepareStatement", String.class);
+
+		Common.runTimerAsync(20 * 5, new BukkitRunnable() {
+
+			@Override
+			public void run() {
+				try {
+					final PreparedStatement statement = ReflectionUtil.invoke(methodPrepareStatement, instance, "SELECT * FROM {mutes}");
+					statement.execute();
+
+					final ResultSet resultSet = statement.getResultSet();
+
+					while (resultSet.next()) {
+						// iterate for all rows, then display column=row pair
+						System.out.println("============== ENTRY =================");
+
+						// also print column names
+						for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++)
+							System.out.println(resultSet.getMetaData().getColumnName(i) + " = " + resultSet.getString(i));
+
+						final String uuid = resultSet.getString("UUID");
+						final boolean active = resultSet.getBoolean("ACTIVE");
+						final long until = resultSet.getLong("UNTIL");
+
+						if (active) {
+							if (until != 0 && until < System.currentTimeMillis())
+								continue;
+
+							mutedPlayerUids.add(uuid);
+						}
+					}
+				} catch (final Throwable t) {
+					Common.error(t, "Error while fetching mutes from LiteBans, aborting. Is the integration outdated?");
+
+					this.cancel();
+				}
+			}
+		});
+	}
+
 	/*
 	 * Return true if the given player is muted.
 	 */
 	boolean isMuted(final Player player) {
-		return false; // TODO Problematic, we're investigating this.
-		/*try {
-			final Class<?> api = ReflectionUtil.lookupClass("litebans.api.Database");
-			final Object instance = ReflectionUtil.invokeStatic(api, "get");
-
-			return ReflectionUtil.invoke("isPlayerMuted", instance, player.getUniqueId());
-
-		} catch (final Throwable t) {
-			if (!t.toString().contains("Could not find class")) {
-				Common.log("Unable to check if " + player.getName() + " is muted at LiteBans. Is the API hook outdated? See console error:");
-
-				t.printStackTrace();
-			}
-
-			return false;
-		}*/
+		return this.mutedPlayerUids.contains(player.getUniqueId().toString());
 	}
 }
 

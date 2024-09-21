@@ -235,7 +235,7 @@ public abstract class SimplePrompt extends ValidatingPrompt {
 				final String failPrompt = this.getFailedValidationText(context, input);
 
 				if (failPrompt != null)
-					this.tellLater(0, context.getForWhom(), Variables.replace(Lang.component("prefix-error").appendMini(" " + failPrompt), Platform.toPlayer(this.getPlayer(context))));
+					this.tellLater(0, context.getForWhom(), Variables.replace(Messenger.getErrorPrefix().appendMini(" " + failPrompt), Platform.toPlayer(this.getPlayer(context))));
 
 				// Redisplay this prompt to the user to re-collect input
 				return this;

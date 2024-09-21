@@ -13,14 +13,16 @@ public final class DumpLocaleCommand extends SimpleSubCommandCore {
 		super("dumplocale|dumploc");
 
 		this.setMaxArguments(0);
-		this.setDescription("Copy cloud language file to lang/ folder so you can edit it based on your settings.yml Locale key. Also updates your file with new keys and removes unused ones.");
+
+		// TODO too long description in command label on 1.8.8
+		this.setDescription("Copy language file to lang/ folder so you can edit it. This uses 'Locale' key from settings.yml. Existing file will be updated with new keys and unused ones will be deleted.");
 	}
 
 	@Override
 	protected void onCommand() {
 		tellInfo("Dumping or updating " + SimpleSettings.LOCALE + " locale file...");
 
-		final File dumped = Lang.dumpLocale();
+		final File dumped = Lang.Storage.dump();
 		final File rootFile = Platform.getPlugin().getDataFolder();
 
 		tellSuccess("Locale file dumped to " + dumped.getAbsolutePath().replace(rootFile.getParentFile().getAbsolutePath(), "") + ". Existing keys were updated, see console for details.");

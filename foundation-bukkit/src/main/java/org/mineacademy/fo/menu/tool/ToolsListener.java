@@ -20,9 +20,8 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.projectiles.ProjectileSource;
 import org.mineacademy.fo.Common;
-import org.mineacademy.fo.MinecraftVersion;
-import org.mineacademy.fo.MinecraftVersion.V;
 import org.mineacademy.fo.Valid;
 import org.mineacademy.fo.event.RocketExplosionEvent;
 import org.mineacademy.fo.model.SimpleRunnable;
@@ -102,7 +101,6 @@ public final class ToolsListener implements Listener {
 	 */
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onToolPlaceBlock(final BlockPlaceEvent event) {
-
 		final Player player = event.getPlayer();
 		final Tool tool = Tool.getTool(player.getItemInHand());
 
@@ -179,16 +177,7 @@ public final class ToolsListener implements Listener {
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onRocketShoot(final ProjectileLaunchEvent event) {
 		final Projectile shot = event.getEntity();
-		final Object /* 1.6.4 Comp */ shooter;
-
-		try {
-			shooter = shot.getShooter();
-		} catch (final NoSuchMethodError ex) {
-			if (MinecraftVersion.atLeast(V.v1_4))
-				ex.printStackTrace();
-
-			return;
-		}
+		final ProjectileSource shooter = shot.getShooter();
 
 		if (!(shooter instanceof Player))
 			return;

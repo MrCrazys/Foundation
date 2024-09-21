@@ -6,10 +6,10 @@ import java.util.List;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
+import org.mineacademy.fo.Messenger;
 import org.mineacademy.fo.menu.Menu;
 import org.mineacademy.fo.menu.model.ItemCreator;
 import org.mineacademy.fo.model.Variables;
-import org.mineacademy.fo.platform.Platform;
 import org.mineacademy.fo.remain.CompColor;
 import org.mineacademy.fo.remain.CompItemFlag;
 import org.mineacademy.fo.remain.CompMaterial;
@@ -135,9 +135,7 @@ public class ButtonRemove extends Button {
 			player.closeInventory();
 			ButtonRemove.this.removeAction.run();
 
-			Lang
-					.componentVars("menu-item-deleted", "item", (!ButtonRemove.this.toRemoveType.isEmpty() ? ButtonRemove.this.toRemoveType + " " : "") + ButtonRemove.this.toRemoveName)
-					.send(Platform.toPlayer(player));
+			Messenger.success(player, Lang.componentVars("menu-item-deleted", "item", (!ButtonRemove.this.toRemoveType.isEmpty() ? ButtonRemove.this.toRemoveType + " " : "") + ButtonRemove.this.toRemoveName));
 		}
 	}
 

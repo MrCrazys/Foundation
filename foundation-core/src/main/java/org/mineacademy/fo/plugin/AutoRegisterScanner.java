@@ -233,7 +233,7 @@ final class AutoRegisterScanner {
 		for (final Class<?> delayedSettings : delayedLoading)
 			YamlStaticConfig.load((Class<? extends YamlStaticConfig>) delayedSettings);
 
-		Lang.downloadLocales();
+		Lang.Storage.download();
 	}
 
 	/*

@@ -6,7 +6,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -183,7 +182,7 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 		if (!ReflectionUtil.isClassAvailable("net.kyori.adventure.text.minimessage.MiniMessage"))
 
 			// Pre-merge: 1.16-1.17
-			if (ReflectionUtil.isClassAvailable("net.kyori.adventure.audience.FoundationPlayer")) {
+			if (ReflectionUtil.isClassAvailable("net.kyori.adventure.audience.Audience")) {
 				String version = "4.2.0";
 
 				try {
@@ -201,7 +200,7 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 						.build());
 
 			} else
-				this.loadLibrary("net.kyori", "adventure-text-minimessage", "4.10.0");
+				this.loadLibrary("net.kyori", "adventure-text-minimessage", "4.17.0");
 	}
 
 	@Override
@@ -211,9 +210,12 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 		this.checkShading();
 
 		// Check the required Minecraft server version
-		if (!this.checkServerVersions0()) {
-			this.setEnabled(false);
+		if (MinecraftVersion.olderThan(V.v1_8)) {
+			Common.logFramed(false,
+					this.getDataFolder().getName() + " requires Minecraft 1.8.8 or newer to run.",
+					"Please upgrade your server.");
 
+			this.setEnabled(false);
 			return;
 		}
 
@@ -437,39 +439,6 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 				throw new FoException("Shading exception, see above for details.");
 			}
 		}
-	}
-
-	/**
-	 * Check if the minimum required MC version is installed
-	 *
-	 * @return
-	 */
-	private boolean checkServerVersions0() {
-
-		// Check min version
-		final V minimumVersion = this.getMinimumVersion();
-
-		if (minimumVersion != null && MinecraftVersion.olderThan(minimumVersion)) {
-			Common.logFramed(false,
-					this.getDataFolder().getName() + " requires Minecraft " + minimumVersion + " or newer to run.",
-					"Please upgrade your server.");
-
-			return false;
-		}
-
-		// Check max version
-		final V maximumVersion = this.getMaximumVersion();
-
-		if (maximumVersion != null && MinecraftVersion.newerThan(maximumVersion)) {
-			Common.logFramed(false,
-					this.getDataFolder().getName() + " requires Minecraft " + maximumVersion + " or older to run.",
-					"Please downgrade your server or",
-					"wait for the new version.");
-
-			return false;
-		}
-
-		return true;
 	}
 
 	/**
@@ -775,30 +744,6 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 	}
 
 	/**
-	 * The the minimum MC version to run
-	 * <p>
-	 * We will prevent loading it automatically if the server's version is
-	 * below the given one
-	 *
-	 * @return
-	 */
-	public MinecraftVersion.V getMinimumVersion() {
-		return null;
-	}
-
-	/**
-	 * The maximum MC version for this plugin to load
-	 * <p>
-	 * We will prevent loading it automatically if the server's version is
-	 * above the given one
-	 *
-	 * @return
-	 */
-	public MinecraftVersion.V getMaximumVersion() {
-		return null;
-	}
-
-	/**
 	 * Get the year of foundation displayed in our {@link SimpleCommandGroup} on help
 	 *
 	 * @return -1 by default, or the founded year
@@ -913,19 +858,6 @@ public abstract class SimplePlugin extends JavaPlugin implements Listener, Found
 	// ----------------------------------------------------------------------------------------
 	// Overriding parent methods
 	// ----------------------------------------------------------------------------------------
-
-	/**
-	 * Return the command specified in plugin.yml
-	 *
-	 * @deprecated Still works, but Foundation provides SimpleCommand instead
-	 * 			   for your commands where you can use \@AutoRegister to register
-	 * 		  	   commands automatically without the need of using plugin.yml.
-	 */
-	@Deprecated
-	@Override
-	public final PluginCommand getCommand(final String name) {
-		return super.getCommand(name);
-	}
 
 	/**
 	 * Get the plugins jar file

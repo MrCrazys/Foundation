@@ -5,7 +5,6 @@ import java.net.InetSocketAddress;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.conversations.Conversable;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.mineacademy.fo.MinecraftVersion;
@@ -164,7 +163,7 @@ public class BukkitPlayer extends FoundationPlayer {
 
 		// Ugly hack since most conversations prevent players from receiving messages through other API calls
 		if (this.isConversing())
-			((Conversable) this.player).sendRawMessage(message);
+			this.player.sendRawMessage(message);
 
 		else
 			this.sender.sendMessage(message);
@@ -175,7 +174,7 @@ public class BukkitPlayer extends FoundationPlayer {
 
 		// Ugly hack since most conversations prevent players from receiving messages through other API calls
 		if (this.isConversing()) {
-			((Conversable) this.player).sendRawMessage(SimpleComponent.fromAdventure(component).toLegacy());
+			this.player.sendRawMessage(SimpleComponent.fromAdventure(component).toLegacy());
 
 			return;
 		}
@@ -189,22 +188,16 @@ public class BukkitPlayer extends FoundationPlayer {
 		}
 
 		if (MinecraftVersion.olderThan(V.v1_16)) {
+			String json = GsonComponentSerializer.gson().serialize(component);
 
-			if (MinecraftVersion.olderThan(V.v1_7))
+			// different hover event key in legacy and adventure conversion is broken, again
+			json = json.replace("\"action\":\"show_text\",\"contents\"", "\"action\":\"show_text\",\"value\"");
+
+			try {
+				this.player.spigot().sendMessage(Remain.convertJsonToBungee(json));
+
+			} catch (final NoSuchMethodError ex) {
 				this.sender.sendMessage(SimpleComponent.fromAdventure(component).toLegacy());
-
-			else {
-				String json = GsonComponentSerializer.gson().serialize(component);
-
-				// different hover event key in legacy and adventure conversion is broken, again
-				json = json.replace("\"action\":\"show_text\",\"contents\"", "\"action\":\"show_text\",\"value\"");
-
-				try {
-					this.player.spigot().sendMessage(Remain.convertJsonToBungee(json));
-
-				} catch (final NoSuchMethodError ex) {
-					this.sender.sendMessage(SimpleComponent.fromAdventure(component).toLegacy());
-				}
 			}
 
 		} else

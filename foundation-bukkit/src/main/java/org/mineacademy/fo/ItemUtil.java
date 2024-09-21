@@ -75,14 +75,10 @@ public final class ItemUtil {
 			}
 		}
 
-		if (MinecraftVersion.atLeast(V.v1_7)) {
-			final ReadableNBT firstNbt = NBT.readNbt(first);
-			final ReadableNBT secondNbt = NBT.readNbt(second);
+		final ReadableNBT firstNbt = NBT.readNbt(first);
+		final ReadableNBT secondNbt = NBT.readNbt(second);
 
-			return matchNbt(SimplePlugin.getInstance().getName(), firstNbt, secondNbt) && matchNbt(SimplePlugin.getInstance().getName() + "_Item", firstNbt, secondNbt);
-		}
-
-		return true;
+		return matchNbt(SimplePlugin.getInstance().getName(), firstNbt, secondNbt) && matchNbt(SimplePlugin.getInstance().getName() + "_Item", firstNbt, secondNbt);
 	}
 
 	private static boolean listMatchPlain(List<String> first, List<String> second) {

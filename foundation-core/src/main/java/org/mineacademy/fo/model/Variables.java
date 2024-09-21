@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.mineacademy.fo.CommonCore;
+import org.mineacademy.fo.MessengerCore;
 import org.mineacademy.fo.TimeUtil;
 import org.mineacademy.fo.ValidCore;
 import org.mineacademy.fo.platform.FoundationPlayer;
@@ -190,12 +191,12 @@ public final class Variables {
 			}
 
 		replacements.put("prefix_plugin", SimpleSettings.PLUGIN_PREFIX);
-		replacements.put("prefix_info", Lang.component("prefix-info"));
-		replacements.put("prefix_success", Lang.component("prefix-success"));
-		replacements.put("prefix_warn", Lang.component("prefix-warn"));
-		replacements.put("prefix_error", Lang.component("prefix-error"));
-		replacements.put("prefix_question", Lang.component("prefix-question"));
-		replacements.put("prefix_announce", Lang.component("prefix-announce"));
+		replacements.put("prefix_info", MessengerCore.getInfoPrefix());
+		replacements.put("prefix_success", MessengerCore.getSuccessPrefix());
+		replacements.put("prefix_warn", MessengerCore.getWarnPrefix());
+		replacements.put("prefix_error", MessengerCore.getErrorPrefix());
+		replacements.put("prefix_question", MessengerCore.getQuestionPrefix());
+		replacements.put("prefix_announce", MessengerCore.getAnnouncePrefix());
 		replacements.put("server_name", Platform.hasCustomServerName() ? Platform.getCustomServerName() : "");
 		replacements.put("date", TimeUtil.getFormattedDate());
 		replacements.put("date_short", TimeUtil.getFormattedDateShort());

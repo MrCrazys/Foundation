@@ -69,14 +69,8 @@ public final class BossBarInternals implements Listener {
 			protocolHack = false;
 		}
 
-		if (MinecraftVersion.olderThan(V.v1_6))
-			this.entityClass = null;
-
-		else if (protocolHack)
+		if (protocolHack)
 			this.entityClass = NMSDragon_v1_8Hack.class;
-
-		else if (MinecraftVersion.equals(V.v1_6))
-			this.entityClass = NMSDragon_v1_6.class;
 
 		else if (MinecraftVersion.equals(V.v1_7))
 			this.entityClass = NMSDragon_v1_7.class;
@@ -87,20 +81,18 @@ public final class BossBarInternals implements Listener {
 		else
 			this.entityClass = NMSDragon_v1_9.class;
 
-		if (MinecraftVersion.atLeast(V.v1_6)) {
-			Valid.checkNotNull(this.entityClass, "Failed to load Boss bar on Minecraft " + MinecraftVersion.getFullVersion() + "!");
+		Valid.checkNotNull(this.entityClass, "Failed to load Boss bar on Minecraft " + MinecraftVersion.getFullVersion() + "!");
 
-			Platform.registerEvents(this);
+		Platform.registerEvents(this);
 
-			if (protocolHack)
-				Common.runTimer(5, () -> {
-					for (final UUID uuid : this.players.keySet()) {
-						final Player player = Remain.getPlayerByUUID(uuid);
+		if (protocolHack)
+			Common.runTimer(5, () -> {
+				for (final UUID uuid : this.players.keySet()) {
+					final Player player = Remain.getPlayerByUUID(uuid);
 
-						Remain.sendPacket(player, this.players.get(uuid).getTeleportPacket(this.getDragonLocation(player.getLocation())));
-					}
-				});
-		}
+					Remain.sendPacket(player, this.players.get(uuid).getTeleportPacket(this.getDragonLocation(player.getLocation())));
+				}
+			});
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

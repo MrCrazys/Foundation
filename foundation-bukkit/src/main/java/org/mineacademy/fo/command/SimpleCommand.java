@@ -2,7 +2,7 @@ package org.mineacademy.fo.command;
 
 import java.util.List;
 
-public abstract class SimpleCommand extends SimpleCommandCore implements SharedCommandCore {
+public abstract class SimpleCommand extends SimpleCommandCore implements SharedBukkitCommandCore {
 
 	protected SimpleCommand(List<String> labelAndAliases) {
 		super(labelAndAliases);

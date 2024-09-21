@@ -20,8 +20,6 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.mineacademy.fo.Common;
 import org.mineacademy.fo.ItemUtil;
 import org.mineacademy.fo.Messenger;
-import org.mineacademy.fo.MinecraftVersion;
-import org.mineacademy.fo.MinecraftVersion.V;
 import org.mineacademy.fo.PlayerUtil;
 import org.mineacademy.fo.ReflectionUtil;
 import org.mineacademy.fo.Valid;
@@ -479,12 +477,6 @@ public abstract class Menu {
 	public final void displayTo(final Player player) {
 		Valid.checkNotNull(this.size, "Size not set in " + this + " (call setSize in your constructor)");
 		Valid.checkNotNull(this.title, "Title not set in " + this + " (call setTitle in your constructor)");
-
-		if (MinecraftVersion.olderThan(V.v1_5)) {
-			Messenger.error(player, "Displaying menus require Minecraft 1.5.2 or greater.");
-
-			return;
-		}
 
 		this.viewer = player;
 		this.registerButtonsIfHasnt();

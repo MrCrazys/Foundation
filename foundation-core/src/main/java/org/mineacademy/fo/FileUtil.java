@@ -173,9 +173,9 @@ public final class FileUtil {
 		final URLConnection connection = new URL(url + "?token=" + System.currentTimeMillis()).openConnection();
 
 		// Set a random user agent to prevent most webhostings from rejecting with 403
-		connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
-		connection.setConnectTimeout(6000);
-		connection.setReadTimeout(6000);
+		connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36");
+		connection.setConnectTimeout(5000);
+		connection.setReadTimeout(5000);
 		connection.setDoOutput(true);
 
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
@@ -195,18 +195,19 @@ public final class FileUtil {
 	 * @param fileName
 	 * @return
 	 */
-	public static List<String> readLines(String fileName) {
-		return readLines(getFile(fileName));
+	public static List<String> readLinesFromFile(String fileName) {
+		return readLinesFromFile(getFile(fileName));
 	}
 
 	/**
-	 * Return all lines in the file, failing if the file does not exists
+	 * Return all lines in the file, returning null if the file does not exists
 	 *
 	 * @param file
 	 * @return
 	 */
-	public static List<String> readLines(@NonNull File file) {
-		ValidCore.checkBoolean(file.exists(), "File: " + file + " does not exists!");
+	public static List<String> readLinesFromFile(@NonNull File file) {
+		if (!file.exists())
+			return null;
 
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
 			final List<String> lines = new ArrayList<>();
@@ -220,6 +221,35 @@ public final class FileUtil {
 		} catch (final IOException ee) {
 			throw new FoException(ee, "Could not read lines from " + file.getName());
 		}
+	}
+
+	/**
+	 * Return an internal resource within our plugin's jar file
+	 *
+	 * @param path
+	 * @return the content of the internal file
+	 */
+	public static List<String> readLinesFromInternalPath(@NonNull String path) {
+		try (JarFile jarFile = new JarFile(Platform.getPlugin().getFile())) {
+
+			for (final Enumeration<JarEntry> it = jarFile.entries(); it.hasMoreElements();) {
+				final JarEntry entry = it.nextElement();
+
+				if (entry.toString().equals(path)) {
+					final InputStream is = jarFile.getInputStream(entry);
+					final BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+					final List<String> lines = reader.lines().collect(Collectors.toList());
+
+					reader.close();
+					return lines;
+				}
+			}
+
+		} catch (final Throwable ex) {
+			ex.printStackTrace();
+		}
+
+		return null;
 	}
 
 	// ----------------------------------------------------------------------------------------------------
@@ -347,7 +377,7 @@ public final class FileUtil {
 	 * @return the extracted file
 	 */
 	public static File extract(String from, String to) {
-		final List<String> lines = getInternalFileContent(from);
+		final List<String> lines = readLinesFromInternalPath(from);
 		ValidCore.checkNotNull(lines, "Inbuilt " + from + " not found! Did you reload?");
 
 		return extract(lines, to);
@@ -473,37 +503,6 @@ public final class FileUtil {
 		} catch (final Throwable t) {
 			CommonCore.throwError(t, "Failed to copy folder " + folder + " to " + destination);
 		}
-	}
-
-	/**
-	 * Return an internal resource within our plugin's jar file
-	 *
-	 * @param path
-	 * @return the content of the internal file
-	 */
-	public static List<String> getInternalFileContent(@NonNull String path) {
-
-		try (JarFile jarFile = new JarFile(Platform.getPlugin().getFile())) {
-
-			for (final Enumeration<JarEntry> it = jarFile.entries(); it.hasMoreElements();) {
-				final JarEntry entry = it.nextElement();
-
-				if (entry.toString().equals(path)) {
-
-					final InputStream is = jarFile.getInputStream(entry);
-					final BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-					final List<String> lines = reader.lines().collect(Collectors.toList());
-
-					reader.close();
-					return lines;
-				}
-			}
-
-		} catch (final Throwable ex) {
-			ex.printStackTrace();
-		}
-
-		return null;
 	}
 
 	/**

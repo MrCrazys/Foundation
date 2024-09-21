@@ -97,7 +97,7 @@
 	"menu-button-return-title": "<dark_red><bold>Return",
 	"menu-cannot-open-during-conversation": "<red>Type 'exit' to quit your conversation before opening menu.",
 	"menu-error": "<red>Oups! There was a problem with this menu! Please contact the administrator to review the console for details.",
-	"menu-item-deleted": "<dark_green>The {item} has been deleted.",
+	"menu-item-deleted": "The {item} has been <dark_green>deleted</dark_green>.",
 	"menu-page-first": "<gray>First Page",
 	"menu-page-last": "<gray>Last Page",
 	"menu-page-next": "Page {page} <dark_gray>>>",

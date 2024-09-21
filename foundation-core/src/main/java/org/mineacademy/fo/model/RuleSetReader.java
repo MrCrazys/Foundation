@@ -51,7 +51,7 @@ public abstract class RuleSetReader<T extends Rule> {
 		final File file = rule.getFile();
 		ValidCore.checkBoolean(file.exists(), "No such file: " + file + " Rule: " + rule);
 
-		final List<String> lines = FileUtil.readLines(file);
+		final List<String> lines = FileUtil.readLinesFromFile(file);
 		boolean found = false;
 
 		for (int i = 0; i < lines.size(); i++) {
@@ -116,7 +116,7 @@ public abstract class RuleSetReader<T extends Rule> {
 	 */
 	protected final List<T> loadFromFile(File file) {
 		final List<T> rules = new ArrayList<>();
-		final List<String> lines = FileUtil.readLines(file);
+		final List<String> lines = FileUtil.readLinesFromFile(file);
 
 		// The temporary rule being created
 		T rule = null;

@@ -77,7 +77,6 @@ import org.mineacademy.fo.RandomUtil;
 import org.mineacademy.fo.ReflectionUtil;
 import org.mineacademy.fo.TimeUtil;
 import org.mineacademy.fo.Valid;
-import org.mineacademy.fo.ValidCore;
 import org.mineacademy.fo.constants.FoConstants;
 import org.mineacademy.fo.exception.FoException;
 import org.mineacademy.fo.model.CompToastStyle;
@@ -279,8 +278,6 @@ public final class Remain extends RemainCore {
 	static {
 		CompParticle.CRIT.getClass();
 
-		final boolean atLeast1_4 = MinecraftVersion.atLeast(V.v1_4);
-
 		isPaper = ReflectionUtil.isClassAvailable("co.aikar.timings.Timing");
 		isFolia = ReflectionUtil.isClassAvailable("io.papermc.paper.threadedregions.RegionizedServer");
 		isThermos = ReflectionUtil.isClassAvailable("thermos.ThermosRemapper");
@@ -307,7 +304,7 @@ public final class Remain extends RemainCore {
 
 		try {
 			fieldPlayerConnection = ReflectionUtil.getNMSClass("EntityPlayer", "net.minecraft.server.level.EntityPlayer")
-					.getField(MinecraftVersion.atLeast(V.v1_20) ? "c" : MinecraftVersion.atLeast(V.v1_17) ? "b" : atLeast1_4 ? "playerConnection" : "netServerHandler");
+					.getField(MinecraftVersion.atLeast(V.v1_20) ? "c" : MinecraftVersion.atLeast(V.v1_17) ? "b" : "playerConnection");
 		} catch (final Throwable t) {
 			Common.error(t, "Failed to find EntityPlayer.playerConnection");
 		}
@@ -321,7 +318,7 @@ public final class Remain extends RemainCore {
 			}
 
 		try {
-			sendPacket = ReflectionUtil.getNMSClass(atLeast1_4 ? "PlayerConnection" : "NetServerHandler", "net.minecraft.server.network.PlayerConnection")
+			sendPacket = ReflectionUtil.getNMSClass("PlayerConnection", "net.minecraft.server.network.PlayerConnection")
 					.getMethod(MinecraftVersion.atLeast(V.v1_18) ? "a" : "sendPacket", ReflectionUtil.getNMSClass("Packet", "net.minecraft.network.protocol.Packet"));
 		} catch (final Throwable t) {
 			Common.error(t, "Failed to find PlayerConnection.sendPacket()");
@@ -387,7 +384,7 @@ public final class Remain extends RemainCore {
 			hasPlayerOpenSignMethod = false;
 		}
 
-		if (MinecraftVersion.newerThan(V.v1_6) && MinecraftVersion.olderThan(V.v1_13)) {
+		if (MinecraftVersion.olderThan(V.v1_13)) {
 			try {
 				final Class<?> chatBaseComponent = ReflectionUtil.getNMSClass("IChatBaseComponent", "N/A");
 
@@ -751,8 +748,6 @@ public final class Remain extends RemainCore {
 	 * @return
 	 */
 	public static Object convertLegacyToIChatBase(String legacy) {
-		Valid.checkBoolean(MinecraftVersion.atLeast(V.v1_7), "Serializing chat components requires Minecraft 1.7.10 and greater");
-
 		final Class<?> chatSerializer = ReflectionUtil.getNMSClass((MinecraftVersion.equals(V.v1_7) ? "" : "IChatBaseComponent$") + "ChatSerializer", "net.minecraft.network.chat.IChatBaseComponent$ChatSerializer");
 		final Method a = ReflectionUtil.getMethod(chatSerializer, "a", String.class);
 
@@ -1422,13 +1417,8 @@ public final class Remain extends RemainCore {
 		if (entity instanceof LivingEntity && MinecraftVersion.atLeast(V.v1_16))
 			return ((LivingEntity) entity).isInvisible();
 
-		else if (MinecraftVersion.atLeast(V.v1_4)) {
-			final Object nmsEntity = getHandleEntity(entity);
-
-			return (boolean) ReflectionUtil.invoke("isInvisible", nmsEntity);
-		}
-
-		return false;
+		final Object nmsEntity = getHandleEntity(entity);
+		return (boolean) ReflectionUtil.invoke("isInvisible", nmsEntity);
 	}
 
 	/**
@@ -1963,8 +1953,6 @@ public final class Remain extends RemainCore {
 				entity.setCustomName(CompChatColor.translateColorCodes(name));
 
 		} catch (final NoSuchMethodError er) {
-			Valid.checkBoolean(MinecraftVersion.atLeast(V.v1_7), "setCustomName requires Minecraft 1.7.10+");
-
 			final NBTEntity nbt = new NBTEntity(entity);
 
 			nbt.setInteger("CustomNameVisible", visible ? 1 : 0);
@@ -2025,8 +2013,6 @@ public final class Remain extends RemainCore {
 	 */
 	@Deprecated
 	public static void setInvisible(Object entity, boolean invisible) {
-		Valid.checkBoolean(MinecraftVersion.atLeast(V.v1_4), "Entity#setInvisible requires Minecraft 1.4.7 or greater");
-
 		if (entity instanceof LivingEntity && MinecraftVersion.atLeast(V.v1_16))
 			((LivingEntity) entity).setInvisible(invisible);
 
@@ -2511,44 +2497,40 @@ public final class Remain extends RemainCore {
 	 * @return the Json string representation of the item
 	 */
 	public static String convertItemStackToJson(ItemStack item) {
-		if (MinecraftVersion.atLeast(V.v1_4)) {
-			// ItemStack methods to get a net.minecraft.server.ItemStack object for serialization
-			final Class<?> craftItemstack = ReflectionUtil.getOBCClass("inventory.CraftItemStack");
-			final Method asNMSCopyMethod = ReflectionUtil.getMethod(craftItemstack, "asNMSCopy", ItemStack.class);
+		// ItemStack methods to get a net.minecraft.server.ItemStack object for serialization
+		final Class<?> craftItemstack = ReflectionUtil.getOBCClass("inventory.CraftItemStack");
+		final Method asNMSCopyMethod = ReflectionUtil.getMethod(craftItemstack, "asNMSCopy", ItemStack.class);
 
-			Valid.checkNotNull(asNMSCopyMethod, "Unable to find " + craftItemstack + "#asNMSCopy() method for server version " + Bukkit.getBukkitVersion());
+		Valid.checkNotNull(asNMSCopyMethod, "Unable to find " + craftItemstack + "#asNMSCopy() method for server version " + Bukkit.getBukkitVersion());
 
-			// NMS Method to serialize a net.minecraft.server.ItemStack to a valid Json string
-			final Class<?> nmsItemStack = ReflectionUtil.getNMSClass("ItemStack", "net.minecraft.world.item.ItemStack");
-			final Object nmsItemStackObj = ReflectionUtil.invoke(asNMSCopyMethod, null, item);
+		// NMS Method to serialize a net.minecraft.server.ItemStack to a valid Json string
+		final Class<?> nmsItemStack = ReflectionUtil.getNMSClass("ItemStack", "net.minecraft.world.item.ItemStack");
+		final Object nmsItemStackObj = ReflectionUtil.invoke(asNMSCopyMethod, null, item);
 
-			if (MinecraftVersion.newerThan(V.v1_20) || (MinecraftVersion.atLeast(V.v1_20) && MinecraftVersion.getSubversion() > 4)) {
-				if (Remain.isPaper()) {
-					final Class<?> providerClass = ReflectionUtil.lookupClass("net.minecraft.core.HolderLookup$Provider");
-					final Method saveMethod = ReflectionUtil.getMethod(nmsItemStack, "saveOptional", providerClass);
+		if (MinecraftVersion.newerThan(V.v1_20) || (MinecraftVersion.atLeast(V.v1_20) && MinecraftVersion.getSubversion() > 4)) {
+			if (Remain.isPaper()) {
+				final Class<?> providerClass = ReflectionUtil.lookupClass("net.minecraft.core.HolderLookup$Provider");
+				final Method saveMethod = ReflectionUtil.getMethod(nmsItemStack, "saveOptional", providerClass);
 
-					final Object registryAccess = ReflectionUtil.invoke("registryAccess", Remain.getHandleServer());
-					final Object compoundTag = ReflectionUtil.invoke(saveMethod, nmsItemStackObj, registryAccess);
+				final Object registryAccess = ReflectionUtil.invoke("registryAccess", Remain.getHandleServer());
+				final Object compoundTag = ReflectionUtil.invoke(saveMethod, nmsItemStackObj, registryAccess);
 
-					return compoundTag.toString();
-				} else
-					// Spigot has different mappings so we just give up and render the base item
-					return "{Count:" + item.getAmount() + "b,id:\"" + item.getType().getKey().toString() + "\"}";
+				return compoundTag.toString();
+			} else
+				// Spigot has different mappings so we just give up and render the base item
+				return "{Count:" + item.getAmount() + "b,id:\"" + item.getType().getKey().toString() + "\"}";
 
-			} else {
-				final Class<?> nbtTagCompound = ReflectionUtil.getNMSClass("NBTTagCompound", "net.minecraft.nbt.NBTTagCompound");
-				final Method saveItemstackMethod = ReflectionUtil.getMethod(nmsItemStack, MinecraftVersion.equals(V.v1_18) || MinecraftVersion.equals(V.v1_19) || (MinecraftVersion.equals(V.v1_20) && MinecraftVersion.getSubversion() < 5) ? "b" : "save", nbtTagCompound);
+		} else {
+			final Class<?> nbtTagCompound = ReflectionUtil.getNMSClass("NBTTagCompound", "net.minecraft.nbt.NBTTagCompound");
+			final Method saveItemstackMethod = ReflectionUtil.getMethod(nmsItemStack, MinecraftVersion.equals(V.v1_18) || MinecraftVersion.equals(V.v1_19) || (MinecraftVersion.equals(V.v1_20) && MinecraftVersion.getSubversion() < 5) ? "b" : "save", nbtTagCompound);
 
-				Valid.checkNotNull(saveItemstackMethod, "Unable to find " + nmsItemStack + "#save() method for server version " + Bukkit.getBukkitVersion());
+			Valid.checkNotNull(saveItemstackMethod, "Unable to find " + nmsItemStack + "#save() method for server version " + Bukkit.getBukkitVersion());
 
-				final Object nmsNbtTagCompoundObj = ReflectionUtil.instantiate(nbtTagCompound);
-				final Object itemAsJsonObject = ReflectionUtil.invoke(saveItemstackMethod, nmsItemStackObj, nmsNbtTagCompoundObj);
+			final Object nmsNbtTagCompoundObj = ReflectionUtil.instantiate(nbtTagCompound);
+			final Object itemAsJsonObject = ReflectionUtil.invoke(saveItemstackMethod, nmsItemStackObj, nmsNbtTagCompoundObj);
 
-				return itemAsJsonObject.toString();
-			}
+			return itemAsJsonObject.toString();
 		}
-
-		return item.getType().toString();
 	}
 
 	/**
@@ -2728,7 +2710,7 @@ public final class Remain extends RemainCore {
 					}
 				} else {
 					final Constructor<?> openWindow = ReflectionUtil.getConstructor(
-							ReflectionUtil.getNMSClass(MinecraftVersion.atLeast(V.v1_7) ? "PacketPlayOutOpenWindow" : "Packet100OpenWindow", "N/A"), int.class, int.class, String.class, int.class, boolean.class);
+							ReflectionUtil.getNMSClass("PacketPlayOutOpenWindow", "N/A"), int.class, int.class, String.class, int.class, boolean.class);
 
 					packetOpenWindow = ReflectionUtil.instantiate(openWindow, windowId, 0, CompChatColor.translateColorCodes(title), topInventory.getSize(), true);
 				}
@@ -2941,8 +2923,6 @@ public final class Remain extends RemainCore {
 			entity.setCustomName(null);
 
 		} catch (final NoSuchMethodError er) {
-			ValidCore.checkBoolean(MinecraftVersion.atLeast(V.v1_7), "setCustomName requires Minecraft 1.7.10+");
-
 			final NBTEntity nbt = new NBTEntity(entity);
 
 			nbt.removeKey("CustomNameVisible");

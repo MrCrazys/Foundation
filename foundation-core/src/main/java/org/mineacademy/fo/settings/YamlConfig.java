@@ -491,7 +491,7 @@ public class YamlConfig extends FileConfig {
 	 */
 	public static YamlConfig fromInternalPath(@NonNull String path) {
 		final YamlConfig config = new YamlConfig();
-		final List<String> content = FileUtil.getInternalFileContent(path);
+		final List<String> content = FileUtil.readLinesFromInternalPath(path);
 		ValidCore.checkNotNull(content, "Inbuilt " + path + " not found! Did you reload?");
 
 		config.loadFromString(String.join("\n", content));

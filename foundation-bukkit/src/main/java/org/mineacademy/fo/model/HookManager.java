@@ -2,8 +2,6 @@ package org.mineacademy.fo.model;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -3884,36 +3882,36 @@ class LiteBansHook {
 
 			@Override
 			public void run() {
-				try {
+				/*try {
 					final PreparedStatement statement = ReflectionUtil.invoke(methodPrepareStatement, instance, "SELECT * FROM {mutes}");
 					statement.execute();
-
+				
 					final ResultSet resultSet = statement.getResultSet();
-
+				
 					while (resultSet.next()) {
 						// iterate for all rows, then display column=row pair
 						System.out.println("============== ENTRY =================");
-
+				
 						// also print column names
 						for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++)
 							System.out.println(resultSet.getMetaData().getColumnName(i) + " = " + resultSet.getString(i));
-
+				
 						final String uuid = resultSet.getString("UUID");
 						final boolean active = resultSet.getBoolean("ACTIVE");
 						final long until = resultSet.getLong("UNTIL");
-
+				
 						if (active) {
 							if (until != 0 && until < System.currentTimeMillis())
 								continue;
-
+				
 							mutedPlayerUids.add(uuid);
 						}
 					}
 				} catch (final Throwable t) {
 					Common.error(t, "Error while fetching mutes from LiteBans, aborting. Is the integration outdated?");
-
+				
 					this.cancel();
-				}
+				}*/
 			}
 		});
 	}
